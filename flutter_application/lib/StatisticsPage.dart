@@ -95,7 +95,7 @@ class StatisticsPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             buildChartCard(
-              title: 'Số TC tích lũy',
+              title: 'Số tín chỉ tích lũy',
               spots: tcData,
               semesters: semesters,
               minY: 0,

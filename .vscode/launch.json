@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    
+    {
+      "type": "dart",
+      "request": "launch",
+      "name": "Launch Flutter App",
+      "program": "${workspaceFolder}/flutter_application/lib/main.dart"
+    }
+  ]
+}

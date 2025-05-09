@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'DetailResults.dart';
 
 void main() {
   runApp(MyApp());
@@ -11,79 +12,49 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Results Page',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(primaryColor: Colors.white),
       home: ResultsPage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class DetailResults extends StatelessWidget {
-  final String subjectCode;
-  final String subjectTitle;
-  final String credits;
-  final String details;
-
-  const DetailResults({
-    super.key,
-    required this.subjectCode,
-    required this.subjectTitle,
-    required this.credits,
-    required this.details,
-  });
+class ResultsPage extends StatefulWidget {
+  const ResultsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(subjectTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Mã môn học: $subjectCode'),
-          SizedBox(height: 8),
-          Text('Số tín chỉ: $credits'),
-          SizedBox(height: 8),
-          Text('Chi tiết: $details'),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Text('Đóng'),
-        ),
-      ],
-    );
-  }
+  State<ResultsPage> createState() => _ResultsPageState();
 }
 
-class KetQuaHocTap extends StatelessWidget {
-  const KetQuaHocTap({super.key});
+class _ResultsPageState extends State<ResultsPage> {
+  int currentSemester = 1;
+  int startYear = 2024;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Kết quả học tập',
-          style: TextStyle(color: Colors.white), // White title
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white), // White icon
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        backgroundColor: Color(0xFF1976D2),
-        elevation: 0,
-      ),
-      body: Center(child: Text('Kết quả học tập content here')),
-    );
+  void nextSemester() {
+    setState(() {
+      if (currentSemester == 1) {
+        currentSemester = 2;
+      } else {
+        currentSemester = 1;
+        startYear += 1;
+      }
+    });
   }
-}
 
-class ResultsPage extends StatelessWidget {
+  void previousSemester() {
+    setState(() {
+      if (currentSemester == 2) {
+        currentSemester = 1;
+      } else {
+        currentSemester = 2;
+        startYear -= 1;
+      }
+    });
+  }
+
+  String get semesterText =>
+      'HỌC KÌ $currentSemester, $startYear-${startYear + 1}';
+
   final List<Map<String, String>> subjects = [
     {
       'code': '1024010.2420.21.11',
@@ -113,39 +84,71 @@ class ResultsPage extends StatelessWidget {
     {'code': '1020373.2420.21.11', 'title': 'Xử lý ảnh', 'credits': '3'},
   ];
 
-  ResultsPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Kết quả học tập', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Kết quả học tập',
+          style: TextStyle(color: Colors.white, fontSize: 18),
+        ),
         backgroundColor: Color(0xFF1976D2),
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Semester Header
             Container(
-              padding: EdgeInsets.all(16),
-              color: Color(0xFF1976D2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'HỌC KÌ 1, 2024-2025',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  GestureDetector(
+                    onTap: previousSemester,
+                    child: const Icon(
+                      Icons.chevron_left,
+                      color: Colors.black,
+                      size: 24,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  Text(
+                    semesterText,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: nextSemester,
+                    child: const Icon(
+                      Icons.chevron_right,
+                      color: Colors.black,
+                      size: 24,
+                    ),
+                  ),
                 ],
               ),
             ),
+            const Divider(height: 1),
 
             // Subject List
             Expanded(
               child: ListView.builder(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 itemCount: subjects.length,
                 itemBuilder: (context, index) {
                   final subject = subjects[index];
@@ -160,13 +163,12 @@ class ResultsPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
-        ],
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Color(0xFF1976D2),
+        onPressed: () {},
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.menu, color: Colors.white),
       ),
     );
   }
@@ -181,6 +183,7 @@ class SubjectTile extends StatelessWidget {
     required this.code,
     required this.title,
     required this.credits,
+    super.key,
   });
 
   @override
@@ -194,35 +197,49 @@ class SubjectTile extends StatelessWidget {
               subjectCode: code,
               subjectTitle: title,
               credits: credits,
-              details: '[GK]*0.20+[BT]*0.20+[CK]*0.60',
+              details: '[GK]*0.20 + [BT]*0.20 + [CK]*0.60',
             );
           },
         );
       },
       child: Card(
-        margin: EdgeInsets.symmetric(vertical: 6),
+        elevation: 0,
+        color: Color(0xFFF5F5F5),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 code,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 13, color: Colors.grey[800]),
               ),
-              SizedBox(height: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.blue[800],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    '--/--',
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                ],
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 'Số TC: $credits',
-                style: TextStyle(color: Colors.grey[700]),
+                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
               ),
             ],
           ),

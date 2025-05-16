@@ -57,10 +57,11 @@ class HomePage extends StatelessWidget {
                       icon: Icons.track_changes,
                       label: 'Kết quả học tập',
                       subLabel: 'Tra cứu kết quả học tập',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ResultsPage()),
-                      ),
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ResultsPage()),
+                          ),
                     ),
                     MenuCard(
                       icon: Icons.attach_money,
@@ -90,10 +91,11 @@ class HomePage extends StatelessWidget {
                       icon: Icons.edit_note,
                       label: 'Thống kê',
                       subLabel: 'Thống kê GPA, tín chỉ tích lũy',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => StatisticsPage()),
-                      ),
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => StatisticsPage()),
+                          ),
                     ),
                   ],
                 ),
@@ -127,7 +129,7 @@ class HeaderSection extends StatelessWidget {
             backgroundColor: Colors.white,
             child: CircleAvatar(
               radius: 23,
-              backgroundImage: AssetImage('assets/school_logo.png'),
+              backgroundImage: AssetImage('assets/images/DUT.png'),
             ),
           ),
           const SizedBox(width: 12),
@@ -251,9 +253,22 @@ class DateScheduleStub extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: const [
-                Text('Thứ 2', style: TextStyle(fontSize: 14, color: Colors.black87)),
-                Text('Tháng 2', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                Text('13', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.blue)),
+                Text(
+                  'Thứ 2',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                Text(
+                  'Tháng 2',
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                Text(
+                  '13',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
               ],
             ),
             Container(
@@ -329,14 +344,26 @@ class ScheduleItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(courseName, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+              Text(
+                courseName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(time, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              Text(
+                time,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
             ],
           ),
         ),
         if (room.isNotEmpty)
-          Text(room, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(
+            room,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
       ],
     );
   }
@@ -351,7 +378,11 @@ class CustomBottomNavigationBar extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -1)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, -1),
+          ),
         ],
       ),
       child: BottomNavigationBar(
@@ -368,10 +399,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
             activeIcon: Icon(Icons.home),
             label: '',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: '',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),

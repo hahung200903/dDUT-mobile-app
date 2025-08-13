@@ -22,14 +22,13 @@ class DetailResults extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Blue header with title and close button
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 16.0,
               vertical: 12.0,
             ),
             decoration: const BoxDecoration(
-              color: Color(0xFF1976D2), // Adjusted blue color
+              color: Color(0xFF1976D2), 
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(8.0),
                 topRight: Radius.circular(8.0),
@@ -49,7 +48,6 @@ class DetailResults extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Close button aligned to the right
                 Positioned(
                   right: 0,
                   child: InkWell(
@@ -71,14 +69,13 @@ class DetailResults extends StatelessWidget {
               ],
             ),
           ),
-          // Content with light blue background
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 16.0,
               vertical: 12.0,
             ),
             decoration: const BoxDecoration(
-              color: Color(0xFFECEFF1), // Adjusted background color
+              color: Color(0xFFECEFF1),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(8.0),
                 bottomRight: Radius.circular(8.0),
@@ -127,13 +124,12 @@ class DetailResults extends StatelessWidget {
     );
   }
 
-  // Helper method to build the two-column row layout
   Widget _buildInfoRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 120.0, // Fixed width for labels
+          width: 120.0,
           child: Text(
             label,
             style: const TextStyle(fontSize: 14.0, color: Colors.black87),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'DetailResults.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/results_bloc.dart';
 
 void main() {
   runApp(MyApp());
@@ -19,70 +21,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class ResultsPage extends StatefulWidget {
+class ResultsPage extends StatelessWidget {
   const ResultsPage({super.key});
-
-  @override
-  State<ResultsPage> createState() => _ResultsPageState();
-}
-
-class _ResultsPageState extends State<ResultsPage> {
-  int currentSemester = 1;
-  int startYear = 2024;
-
-  void nextSemester() {
-    setState(() {
-      if (currentSemester == 1) {
-        currentSemester = 2;
-      } else {
-        currentSemester = 1;
-        startYear += 1;
-      }
-    });
-  }
-
-  void previousSemester() {
-    setState(() {
-      if (currentSemester == 2) {
-        currentSemester = 1;
-      } else {
-        currentSemester = 2;
-        startYear -= 1;
-      }
-    });
-  }
-
-  String get semesterText =>
-      'HỌC KÌ $currentSemester, $startYear-${startYear + 1}';
-
-  final List<Map<String, String>> subjects = [
-    {
-      'code': '1024010.2420.21.11',
-      'title': 'Khai phá dữ liệu web',
-      'credits': '3',
-    },
-    {
-      'code': '1023960.2420.21.11',
-      'title': 'Khoa học dữ liệu nâng cao',
-      'credits': '3',
-    },
-    {
-      'code': '1024000.2420.21.11',
-      'title': 'Mô hình hoá hình học',
-      'credits': '3',
-    },
-    {
-      'code': '1024020.2420.21.11A',
-      'title': 'PBL 7: Dự án chuyên ngành 2',
-      'credits': '3',
-    },
-    {
-      'code': '1024000.2420.21.11',
-      'title': 'Trí tuệ nhân tạo nâng cao',
-      'credits': '3',
-    },
-    {'code': '1020373.2420.21.11', 'title': 'Xử lý ảnh', 'credits': '3'},
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -105,62 +45,75 @@ class _ResultsPageState extends State<ResultsPage> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Semester Header
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: BlocBuilder<ResultsBloc, ResultsState>(
+          builder: (context, state) {
+            if (state is ResultsLoading || state is ResultsInitial) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state is ResultsLoaded) {
+              return Column(
                 children: [
-                  GestureDetector(
-                    onTap: previousSemester,
-                    child: const Icon(
-                      Icons.chevron_left,
-                      color: Colors.black,
-                      size: 24,
+                  // Semester Header
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.read<ResultsBloc>().add(const PreviousSemesterPressed()),
+                          child: const Icon(
+                            Icons.chevron_left,
+                            color: Colors.black,
+                            size: 24,
+                          ),
+                        ),
+                        Text(
+                          state.semesterText,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => context.read<ResultsBloc>().add(const NextSemesterPressed()),
+                          child: const Icon(
+                            Icons.chevron_right,
+                            color: Colors.black,
+                            size: 24,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    semesterText,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: nextSemester,
-                    child: const Icon(
-                      Icons.chevron_right,
-                      color: Colors.black,
-                      size: 24,
+                  const Divider(height: 1),
+
+                  // Subject List
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      itemCount: state.subjects.length,
+                      itemBuilder: (context, index) {
+                        final subject = state.subjects[index];
+                        return SubjectTile(
+                          code: subject['code']!,
+                          title: subject['title']!,
+                          credits: subject['credits']!,
+                        );
+                      },
                     ),
                   ),
                 ],
-              ),
-            ),
-            const Divider(height: 1),
-
-            // Subject List
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                itemCount: subjects.length,
-                itemBuilder: (context, index) {
-                  final subject = subjects[index];
-                  return SubjectTile(
-                    code: subject['code']!,
-                    title: subject['title']!,
-                    credits: subject['credits']!,
-                  );
-                },
-              ),
-            ),
-          ],
+              );
+            }
+            if (state is ResultsError) {
+              return Center(child: Text(state.message));
+            }
+            return const SizedBox.shrink();
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton(

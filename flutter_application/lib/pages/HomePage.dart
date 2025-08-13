@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'ResultsPage.dart';
 import 'StatisticsPage.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/results_bloc.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'Roboto',
-        scaffoldBackgroundColor: const Color(0xDDE5F1F8),
+        scaffoldBackgroundColor: const Color(0xFFE7F1FA),
       ),
       home: const HomePage(),
     );
@@ -60,7 +62,12 @@ class HomePage extends StatelessWidget {
                       subLabel: 'Tra cứu kết quả học tập',
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => ResultsPage()),
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider(
+                            create: (_) => ResultsBloc()..add(const LoadResults()),
+                            child: const ResultsPage(),
+                          ),
+                        ),
                       ),
                     ),
                     MenuCard(
@@ -228,7 +235,7 @@ class MenuCard extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: cardHeight * 0.115, // giảm tỷ lệ
+                    fontSize: cardHeight * 0.115,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -239,7 +246,7 @@ class MenuCard extends StatelessWidget {
                   subLabel,
                   style: TextStyle(
                     color: Colors.grey,
-                    fontSize: cardHeight * 0.085, // giảm tỷ lệ
+                    fontSize: cardHeight * 0.085,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,

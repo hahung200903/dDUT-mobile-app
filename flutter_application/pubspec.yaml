@@ -37,6 +37,9 @@ dependencies:
   fluentui_system_icons: ^1.1.219
   flutter_bloc: ^9.1.1
   equatable: ^2.0.7
+  file_picker: ^10.3.1
+  http: ^1.5.0
+  firebase_core: ^4.0.0
 
 
 dev_dependencies:

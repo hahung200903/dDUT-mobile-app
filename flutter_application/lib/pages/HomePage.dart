@@ -48,7 +48,7 @@ class HomePage extends StatelessWidget {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.85, 
+                  childAspectRatio: 0.85,
                   children: [
                     MenuCard(
                       icon: Icons.calendar_month,
@@ -60,15 +60,20 @@ class HomePage extends StatelessWidget {
                       icon: Icons.track_changes,
                       label: 'Kết quả học tập',
                       subLabel: 'Tra cứu kết quả học tập',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BlocProvider(
-                            create: (_) => ResultsBloc()..add(const LoadResults()),
-                            child: const ResultsPage(),
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => BlocProvider(
+                                    create:
+                                        (_) =>
+                                            ResultsBloc()
+                                              ..add(const LoadResults()),
+                                    child: const ResultsPage(),
+                                  ),
+                            ),
                           ),
-                        ),
-                      ),
                     ),
                     MenuCard(
                       icon: Icons.attach_money,
@@ -98,10 +103,11 @@ class HomePage extends StatelessWidget {
                       icon: Icons.edit_note,
                       label: 'Thống kê',
                       subLabel: 'Thống kê GPA, tín chỉ tích lũy',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => StatisticsPage()),
-                      ),
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => StatisticsPage()),
+                          ),
                     ),
                   ],
                 ),
@@ -210,7 +216,8 @@ class MenuCard extends StatelessWidget {
         builder: (context, constraints) {
           final cardWidth = constraints.maxWidth;
           final cardHeight = constraints.maxHeight;
-          final iconSize = (cardWidth < cardHeight ? cardWidth : cardHeight) * 0.31;
+          final iconSize =
+              (cardWidth < cardHeight ? cardWidth : cardHeight) * 0.31;
 
           return Container(
             padding: const EdgeInsets.all(8),
@@ -235,7 +242,7 @@ class MenuCard extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: cardHeight * 0.115,
+                    fontSize: cardHeight * 0.075,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,

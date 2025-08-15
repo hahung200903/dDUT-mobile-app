@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "928367624032",
+    "project_id": "ddut-mobile-app-1bb2e",
+    "storage_bucket": "ddut-mobile-app-1bb2e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:928367624032:android:b0e2e35ce2e57473962805",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUe8m3a1qNJs_ZyqeHTs5U0m3VSEysjk8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,43 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'ResultsPage.dart';
 import 'StatisticsPage.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/results_bloc.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+class HomePage extends StatefulWidget {
+  final String studentId;
+  final String apiBase;
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const HomePage({super.key, required this.studentId, required this.apiBase});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Student Dashboard',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: const Color(0xFFE7F1FA),
-      ),
-      home: const HomePage(),
-    );
-  }
+  State<HomePage> createState() => _HomePageState();
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFE7F1F9),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
             children: [
-              const HeaderSection(),
+              HeaderSection(displayStudentId: widget.studentId),
               const DateScheduleStub(),
               const SizedBox(height: 12),
               Padding(
@@ -51,63 +37,73 @@ class HomePage extends StatelessWidget {
                   childAspectRatio: 0.85,
                   children: [
                     MenuCard(
-                      icon: Icons.calendar_month,
+                      iconWidget: SvgPicture.asset(
+                        'assets/icons/solar_calendar-broken.svg',
+                      ),
                       label: 'Thời khóa biểu',
-                      subLabel: 'Xem lịch học & thi',
                       onTap: () {},
                     ),
                     MenuCard(
-                      icon: Icons.track_changes,
+                      iconWidget: SvgPicture.asset(
+                        'assets/icons/mage_goals.svg',
+                      ),
                       label: 'Kết quả học tập',
-                      subLabel: 'Tra cứu kết quả học tập',
-                      onTap:
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => BlocProvider(
-                                    create:
-                                        (_) =>
-                                            ResultsBloc()
-                                              ..add(const LoadResults()),
-                                    child: const ResultsPage(),
-                                  ),
-                            ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => ResultsPage(
+                                  studentId: widget.studentId,
+                                  apiBase: widget.apiBase,
+                                ),
                           ),
+                        );
+                      },
                     ),
                     MenuCard(
-                      icon: Icons.attach_money,
+                      iconWidget: SvgPicture.asset(
+                        'assets/icons/tabler_coin.svg',
+                      ),
                       label: 'Học phí',
-                      subLabel: 'Kiểm tra thông tin học phí',
                       onTap: () {},
                     ),
                     MenuCard(
-                      icon: Icons.auto_stories,
+                      iconWidget: SvgPicture.asset(
+                        'assets/icons/carbon_book.svg',
+                      ),
                       label: 'Chương trình đào tạo',
-                      subLabel: 'Tra cứu chương trình đào tạo',
                       onTap: () {},
                     ),
                     MenuCard(
                       icon: Icons.calendar_month_outlined,
                       label: 'Đánh giá rèn luyện',
-                      subLabel: 'Upcoming...',
                       onTap: () {},
+                      isDisabled: true,
                     ),
                     MenuCard(
                       icon: Icons.calendar_month_outlined,
                       label: 'Đồ án tốt nghiệp',
-                      subLabel: 'Upcoming...',
                       onTap: () {},
+                      isDisabled: true,
                     ),
                     MenuCard(
-                      icon: Icons.edit_note,
+                      iconWidget: SvgPicture.asset(
+                        'assets/icons/uil_chart-line.svg',
+                      ),
                       label: 'Thống kê',
-                      subLabel: 'Thống kê GPA, tín chỉ tích lũy',
-                      onTap:
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => StatisticsPage()),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => StatisticsPage(
+                                  studentId: widget.studentId,
+                                  apiBase: widget.apiBase,
+                                ),
                           ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -122,7 +118,8 @@ class HomePage extends StatelessWidget {
 }
 
 class HeaderSection extends StatelessWidget {
-  const HeaderSection({super.key});
+  final String displayStudentId;
+  const HeaderSection({super.key, required this.displayStudentId});
 
   @override
   Widget build(BuildContext context) {
@@ -145,22 +142,22 @@ class HeaderSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Phan Trần Nhật Hạ',
+                const Text(
+                  'Sinh viên',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  '102210159',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                  displayStudentId,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ],
             ),
@@ -195,74 +192,107 @@ class HeaderSection extends StatelessWidget {
 }
 
 class MenuCard extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final String label;
-  final String subLabel;
   final VoidCallback onTap;
+  final String? svgAsset;
+  final double? iconSizeOverride;
+  final Color? iconColor;
+  final bool isDisabled;
 
   const MenuCard({
     super.key,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.label,
-    required this.subLabel,
     required this.onTap,
+    this.svgAsset,
+    this.iconSizeOverride,
+    this.iconColor,
+    this.isDisabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final cardWidth = constraints.maxWidth;
-          final cardHeight = constraints.maxHeight;
-          final iconSize =
-              (cardWidth < cardHeight ? cardWidth : cardHeight) * 0.31;
+    return IgnorePointer(
+      ignoring: isDisabled,
+      child: Opacity(
+        opacity: isDisabled ? 0.5 : 1.0,
+        child: GestureDetector(
+          onTap: onTap,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = constraints.maxWidth;
+              final cardHeight = constraints.maxHeight;
+              final calculatedSize =
+                  (cardWidth < cardHeight ? cardWidth : cardHeight) * 0.31;
+              final iconSize = iconSizeOverride ?? calculatedSize;
+              final Color resolvedIconColor =
+                  iconColor ?? (isDisabled ? Colors.grey : Colors.blue);
+              final Color labelColor =
+                  isDisabled ? Colors.grey : Colors.black87;
 
-          return Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  offset: Offset(1, 2),
+              return Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(1, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(icon, color: Colors.blue, size: iconSize),
-                SizedBox(height: cardHeight * 0.06),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: cardHeight * 0.075,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (iconWidget != null)
+                      SizedBox(
+                        width: iconSize,
+                        height: iconSize,
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: iconWidget,
+                        ),
+                      )
+                    else if (svgAsset != null)
+                      SvgPicture.asset(
+                        svgAsset!,
+                        width: iconSize,
+                        height: iconSize,
+                        colorFilter: ColorFilter.mode(
+                          resolvedIconColor,
+                          BlendMode.srcIn,
+                        ),
+                      )
+                    else
+                      Icon(
+                        icon ?? Icons.image_outlined,
+                        color: resolvedIconColor,
+                        size: iconSize,
+                      ),
+                    SizedBox(height: cardHeight * 0.06),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: cardHeight * 0.075,
+                        color: labelColor,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                SizedBox(height: cardHeight * 0.013),
-                Text(
-                  subLabel,
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: cardHeight * 0.085,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -370,7 +400,6 @@ class ScheduleItem extends StatelessWidget {
         ),
       );
     }
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -427,7 +456,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         showSelectedLabels: false,
         showUnselectedLabels: false,
         elevation: 0,
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),

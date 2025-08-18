@@ -1,201 +1,84 @@
+// lib/pages/ResultsPage.dart
 import 'package:flutter/material.dart';
-import 'DetailResults.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/results_bloc.dart';
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Results Page',
-      theme: ThemeData(primaryColor: Colors.white),
-      home: ResultsPage(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
+import '../data/results_repository.dart';
+import 'DetailResults.dart';
 
 class ResultsPage extends StatelessWidget {
-  const ResultsPage({super.key});
+  final String studentId;
+  final String
+  apiBase; // https://asia-southeast1-<PROJECT_ID>.cloudfunctions.net/api
+  const ResultsPage({
+    super.key,
+    required this.studentId,
+    required this.apiBase,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Kết quả học tập',
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        backgroundColor: Color(0xFF1976D2),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
-        ],
-      ),
-      body: SafeArea(
-        child: BlocBuilder<ResultsBloc, ResultsState>(
+    return BlocProvider(
+      create:
+          (_) =>
+              ResultsBloc(ResultsRepository(apiBase))
+                ..add(LoadResults(studentId)),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFE7F1F9),
+        appBar: AppBar(
+            title: const Text('Kết quả học tập'),
+            centerTitle: true,
+            backgroundColor: Color(0xFF2A74BD),
+            iconTheme: const IconThemeData(color: Colors.white),
+            titleTextStyle: const TextStyle(color: Colors.white, fontSize: 18)),
+        body: BlocBuilder<ResultsBloc, ResultsState>(
           builder: (context, state) {
             if (state is ResultsLoading || state is ResultsInitial) {
               return const Center(child: CircularProgressIndicator());
             }
             if (state is ResultsLoaded) {
-              return Column(
-                children: [
-                  // Semester Header
-                  Container(
-                    color: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        GestureDetector(
-                          onTap: () => context.read<ResultsBloc>().add(const PreviousSemesterPressed()),
-                          child: const Icon(
-                            Icons.chevron_left,
-                            color: Colors.black,
-                            size: 24,
-                          ),
-                        ),
-                        Text(
-                          state.semesterText,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => context.read<ResultsBloc>().add(const NextSemesterPressed()),
-                          child: const Icon(
-                            Icons.chevron_right,
-                            color: Colors.black,
-                            size: 24,
-                          ),
-                        ),
-                      ],
+              final items = state.subjects;
+              if (items.isEmpty) {
+                return const Center(child: Text('Không có dữ liệu'));
+              }
+              return ListView.separated(
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, i) {
+                  final s = items[i];
+                  return ListTile(
+                    title: Text(
+                      s.subjectTitle?.isNotEmpty == true
+                          ? s.subjectTitle!
+                          : s.subjectCode,
                     ),
-                  ),
-                  const Divider(height: 1),
+                    subtitle: Text(
+                      'Mã HP: ${s.subjectCode} • Lớp: ${s.classCode}',
+                    ),
+                    onTap: () {
+                      final details = [
+                        'Kỳ: ${s.semesterCode}',
+                        'Điểm 10: ${s.score10?.toStringAsFixed(2) ?? '-'}',
+                        'Điểm 4: ${s.score4?.toStringAsFixed(2) ?? '-'}',
+                        'Điểm chữ: ${s.scoreChar ?? '-'}',
+                      ].join('\n');
 
-                  // Subject List
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      itemCount: state.subjects.length,
-                      itemBuilder: (context, index) {
-                        final subject = state.subjects[index];
-                        return SubjectTile(
-                          code: subject['code']!,
-                          title: subject['title']!,
-                          credits: subject['credits']!,
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                      showDialog(
+                        context: context,
+                        builder:
+                            (_) => DetailResults(
+                              subjectCode: s.subjectCode,
+                              subjectTitle: s.subjectTitle ?? 'N/A',
+                              credits: '${s.credits ?? '-'}',
+                              details: details,
+                            ),
+                      );
+                    },
+                  );
+                },
               );
             }
-            if (state is ResultsError) {
-              return Center(child: Text(state.message));
-            }
-            return const SizedBox.shrink();
+            return const Center(child: Text('Lỗi tải dữ liệu'));
           },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Color(0xFF1976D2),
-        onPressed: () {},
-        elevation: 4,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.menu, color: Colors.white),
-      ),
-    );
-  }
-}
-
-class SubjectTile extends StatelessWidget {
-  final String code;
-  final String title;
-  final String credits;
-
-  const SubjectTile({
-    required this.code,
-    required this.title,
-    required this.credits,
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return DetailResults(
-              subjectCode: code,
-              subjectTitle: title,
-              credits: credits,
-              details: '[GK]*0.20 + [BT]*0.20 + [CK]*0.60',
-            );
-          },
-        );
-      },
-      child: Card(
-        elevation: 0,
-        color: Color(0xFFF5F5F5),
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                code,
-                style: TextStyle(fontSize: 13, color: Colors.grey[800]),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.blue[700],
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    '--/--',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Số TC: $credits',
-                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-              ),
-            ],
-          ),
         ),
       ),
     );

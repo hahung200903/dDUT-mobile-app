@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'ResultsPage.dart';
-import 'StatisticsPage.dart';
+import 'results.dart';
+import 'statistics.dart';
 
 class HomePage extends StatefulWidget {
   final String studentId;
@@ -91,7 +91,7 @@ class _HomePageState extends State<HomePage> {
                       iconWidget: SvgPicture.asset(
                         'assets/icons/uil_chart-line.svg',
                       ),
-                      label: 'Thống kê',
+                      label: 'Học vụ',
                       onTap: () {
                         Navigator.push(
                           context,

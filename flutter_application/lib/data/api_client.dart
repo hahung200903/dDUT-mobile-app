@@ -14,8 +14,6 @@ const bool _useEmulator =
 const String kRegion = 'asia-southeast1';
 
 /// Build base URL cho Functions Emulator:
-///   http://<host>:5001/<projectId>/<region>/api
-/// Web/desktop dùng 127.0.0.1; Android emulator dùng 10.0.2.2
 String _emulatorBase(String projectId) {
   final host = kIsWeb ? '127.0.0.1' : '10.0.2.2';
   return 'http://$host:5001/$projectId/$kRegion/api';
@@ -28,7 +26,6 @@ class ApiClient {
   final String projectId;
   final http.Client _client;
 
-  /// Base URL quyết định theo dart-define -> emulator -> production
   late final String baseUrl = () {
     if (_apiFromEnvironment.isNotEmpty) return _apiFromEnvironment;
     if (_useEmulator) return _emulatorBase(projectId);
@@ -90,7 +87,7 @@ class ApiClient {
     throw Exception('GET $uri failed: ${res.statusCode} ${res.body}');
   }
 
-  /// POST JSON (nếu cần thêm về sau)
+  /// POST JSON
   Future<Map<String, dynamic>> postJson(
     String path, {
     Map<String, String>? query,

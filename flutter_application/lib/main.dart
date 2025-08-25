@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/HomePage.dart';
+import 'pages/home.dart';
 
 const String ApiBase = String.fromEnvironment(
   'API_BASE',

@@ -93,29 +93,34 @@ class DetailResults extends StatelessWidget {
                 const SizedBox(height: 8.0),
 
                 // Two column row for Công thức điểm
-                _buildInfoRow('Công thức điểm:', details),
+                _buildInfoRow(
+                  'Công thức điểm:',
+                  (details.contains('\n') || details.toLowerCase().contains('kỳ:'))
+                      ? '--/--'
+                      : details,
+                ),
                 const SizedBox(height: 8.0),
 
                 // Score rows
-                _buildInfoRow('Bài tập:', '10'),
+                _buildInfoRow('Bài tập:', '--/--'),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Cuối kỳ:', '10'),
+                _buildInfoRow('Cuối kỳ:', '--/--'),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Giữa kỳ:', '10'),
+                _buildInfoRow('Giữa kỳ:', '--/--'),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Quá trình:', '10'),
+                _buildInfoRow('Quá trình:', '--/--'),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Tổng kết:', '10'),
+                _buildInfoRow('Tổng kết:', '--/--'),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Thang 10:', '10'),
+                _buildInfoRow('Thang 10:', '--/--'),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Thang 4:', '4'),
+                _buildInfoRow('Thang 4:', '--/--'),
               ],
             ),
           ),
@@ -129,7 +134,7 @@ class DetailResults extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 120.0,
+          width: 140.0,
           child: Text(
             label,
             style: const TextStyle(fontSize: 14.0, color: Colors.black87),

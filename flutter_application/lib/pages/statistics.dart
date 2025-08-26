@@ -131,7 +131,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
                             child: _BigMetricCard(
                               value:
                                   overallGpa10 == null
@@ -141,10 +144,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             ),
                           ),
                         ),
-                        // vertical blue divider
+
                         Container(
                           width: 2,
-                          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 0,
+                          ),
                           color: const Color(0xFFFFFFFF),
                         ),
                         // Summary tile (white box)
@@ -155,7 +161,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 10,
+                            ),
                             child: _InfoSummaryInline(
                               totalCredits: totalCredits,
                               warningLevel: warningLevel?.toString(),
@@ -386,13 +395,11 @@ class _BigMetricCard extends StatelessWidget {
               color: Color(0xFF2A74BD),
             ),
           ),
-          // hidden label per request
         ],
       ),
     );
   }
 }
-
 
 class _InfoSummaryInline extends StatelessWidget {
   const _InfoSummaryInline({
@@ -423,10 +430,7 @@ class _InfoSummaryInline extends StatelessWidget {
   }
 
   Widget _row(String l, String v) {
-    return Text(
-      '$l: $v',
-      style: const TextStyle(fontSize: 13),
-    );
+    return Text('$l: $v', style: const TextStyle(fontSize: 13));
   }
 }
 
@@ -465,4 +469,3 @@ class _ErrorView extends StatelessWidget {
     );
   }
 }
-

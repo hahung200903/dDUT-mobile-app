@@ -17,11 +17,11 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
       emit(ResultsLoading());
       final data = await repo.fetchResults(event.studentId);
 
-      // Derive currentSemester & startYear from the first semester code, e.g. "2023.2"
+      // Lấy currentSemester & startYear từ mã học kỳ đầu tiên, ví dụ: "2021.1"
       int curSem = 1;
       int startYear = DateTime.now().year;
       if (data.isNotEmpty) {
-        final firstSem = data.first.semesterCode; // like "2023.2"
+        final firstSem = data.first.semesterCode; // "2021.1"
         final parts = firstSem.split('.');
         if (parts.length == 2) {
           startYear = int.tryParse(parts[0]) ?? startYear;
@@ -29,20 +29,19 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
         }
       }
 
-      emit(ResultsLoaded(
-        currentSemester: curSem,
-        startYear: startYear,
-        subjects: data,
-      ));
+      emit(
+        ResultsLoaded(
+          currentSemester: curSem,
+          startYear: startYear,
+          subjects: data,
+        ),
+      );
     } catch (e) {
       emit(ResultsError(e.toString()));
     }
   }
 
-  void _onNextSemester(
-    NextSemesterPressed event,
-    Emitter<ResultsState> emit,
-  ) {
+  void _onNextSemester(NextSemesterPressed event, Emitter<ResultsState> emit) {
     final s = state;
     if (s is ResultsLoaded) {
       final wasSemesterOne = s.currentSemester == 1;

@@ -13,9 +13,9 @@ class DetailResults extends StatelessWidget {
   final String? diemCK;
   final String? diemQT;
 
-  final String? tongKet; // điểm chữ (vd: "A", "B+")
-  final String? thang10; // "8.00"
-  final String? thang4; // "3.20"
+  final String? tongKet; // điểm chữ
+  final String? thang10; // "8.0"
+  final String? thang4; // "3.0"
 
   const DetailResults({
     super.key,
@@ -156,9 +156,8 @@ class DetailResults extends StatelessWidget {
     );
   }
 
-  /// Parse mảng "Chi tiết điểm" từ API để rút ra:
-  /// - "CongThucDiem": chuỗi công thức
-  /// - BT/GK/CK/QT: các điểm thành phần
+  /// "CongThucDiem": chuỗi công thức
+  /// BT/GK/CK/QT/... các điểm thành phần
   Map<String, String> _parseDetails(List<String>? list) {
     final out = <String, String>{};
     if (list == null || list.isEmpty) return out;
@@ -167,7 +166,7 @@ class DetailResults extends StatelessWidget {
       final s = raw.trim();
       if (s.isEmpty) continue;
 
-      // Công thức điểm: "Công thức điểm: [GK]*0.2 + [BT]*0.2 + [CK]*0.6"
+      // Công thức điểm
       if (s.toLowerCase().startsWith('công thức điểm')) {
         final idx = s.indexOf(':');
         out['CongThucDiem'] = idx >= 0 ? s.substring(idx + 1).trim() : s;

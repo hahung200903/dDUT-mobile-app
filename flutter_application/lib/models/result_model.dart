@@ -9,8 +9,6 @@ class ResultModel {
   final double? score10; // Thang 10
   final double? score4; // Thang 4
 
-  // Nếu bạn muốn hiển thị chi tiết điểm trong DetailResults
-  // thì có thể giữ thêm mảng này, mặc định rỗng
   final List<String> detailLines;
 
   ResultModel({

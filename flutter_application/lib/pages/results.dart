@@ -165,11 +165,11 @@ class _ResultsPageState extends State<ResultsPage> {
                                   subjectTitle:
                                       subjectTitleText, // Tên học phần
                                   credits: '${s.credits ?? '-'}', // Số tín chỉ
-                                  // Truyền dữ liệu chi tiết (nếu bạn đã thêm trong model)
+
                                   detailsList: s.detailLines,
                                   congThucDiem: s.formula,
 
-                                  // Điểm tổng hợp; format 1 chữ số thập phân
+                                  // Tổng kết điểm
                                   tongKet: s.scoreChar,
                                   thang10:
                                       s.score10 != null

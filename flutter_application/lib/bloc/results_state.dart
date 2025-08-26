@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../data/results_repository.dart'; 
+import '../../data/results_repository.dart';
 
 abstract class ResultsState extends Equatable {
   const ResultsState();
@@ -12,8 +12,8 @@ class ResultsInitial extends ResultsState {}
 class ResultsLoading extends ResultsState {}
 
 class ResultsLoaded extends ResultsState {
-  final int currentSemester; // 1 or 2
-  final int startYear;       // 2021, 2022, ...
+  final int currentSemester; // năm 1,2, ...
+  final int startYear; // 2021, 2022, ...
   final List<SubjectResult> subjects;
 
   const ResultsLoaded({

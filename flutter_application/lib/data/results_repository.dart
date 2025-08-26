@@ -13,7 +13,6 @@ class SubjectResult {
   final double? score4;
   final String? subjectTitle;
 
-  // 👇 THÊM
   final String? formula; // Công thức điểm
   final List<String> detailLines; // Mảng "Chi tiết điểm"
 
@@ -66,7 +65,6 @@ class ResultsRepository {
   Uri _u(String path, [Map<String, String?> q = const {}]) {
     final base = Uri.parse(baseUrl);
 
-    // join base + path safely (avoid double slashes)
     final basePath =
         base.path.endsWith('/')
             ? base.path.substring(0, base.path.length - 1)
@@ -74,7 +72,6 @@ class ResultsRepository {
     final joined =
         '${base.origin}$basePath${path.startsWith('/') ? path : '/$path'}';
 
-    // build query without null/empty values
     final qp = <String, String>{};
     q.forEach((k, v) {
       if (v != null && v.isNotEmpty) qp[k] = v;
@@ -83,7 +80,6 @@ class ResultsRepository {
     return Uri.parse(joined).replace(queryParameters: qp);
   }
 
-  // Helpers
   int? _toInt(dynamic v) {
     if (v == null) return null;
     if (v is num) return v.toInt();
@@ -98,9 +94,8 @@ class ResultsRepository {
 
   String _toStr(dynamic v) => v?.toString() ?? '';
 
-  /// Chuẩn hoá một item từ payload (VN/EN) về schema SubjectResult
   Map<String, dynamic> _normalizeItem(Map raw) {
-    // VN alias từ SQL: "Kỳ học", "Mã lớp học phần", "Số tín chỉ",
+    // Từ SQL: "Kỳ học", "Mã lớp học phần", "Số tín chỉ",
     // "Thang 10", "Thang 4", "Tổng kết", "Tên học phần", "Công thức điểm", "Chi tiết điểm"
     final semesterCode = raw['semesterCode'] ?? raw['Kỳ học'];
     final classCode = raw['classCode'] ?? raw['Mã lớp học phần'];
@@ -134,7 +129,6 @@ class ResultsRepository {
       'scoreChar': scoreChar == null ? null : _toStr(scoreChar),
       'subjectTitle': subjectTitle == null ? null : _toStr(subjectTitle),
 
-      // THÊM
       'formula': formula == null ? null : _toStr(formula),
       'detailLines': detailLines,
     };

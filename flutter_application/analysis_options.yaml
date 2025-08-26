@@ -15,6 +15,7 @@ analyzer:
     file_names: ignore
     prefer_is_empty: ignore
     prefer_null_aware_operators: ignore
+    use_super_parameters: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

@@ -17,7 +17,6 @@ class StatsRepository {
         '/stats',
         query: {'studentId': studentId},
       );
-      // Cloud Functions trả về:
       // { semesters: [...], gpaPerSemester: [...], creditsPerSemester: [...], overall: {...} }
       return StatsModel.fromJson(obj);
     } on HttpException {

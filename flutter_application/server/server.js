@@ -65,7 +65,6 @@ router.get('/results', async (req, res) => {
     const txt = v => (v === null || v === undefined ? '' : String(v));
 
     const results = r.recordset.map(row => {
-      // Build component token list
       let comps = (row.DanhSachThanhPhan || '')
         .split(/[;,\|]/)
         .map(s => s.trim().toUpperCase())
@@ -150,7 +149,6 @@ router.get('/stats', async (req, res) => {
         WHERE MaHS = @mahs
       `);
 
-    // GỬI 1 LẦN DUY NHẤT
     return res.json({
       semesters: perSemester.recordset.map(r => String(r.semesterCode)),
       gpaPerSemester: perSemester.recordset.map(r => Number(r.gpa10)),

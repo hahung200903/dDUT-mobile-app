@@ -1,56 +1,52 @@
 class ResultModel {
-  final String? subjectCode;
-  final String? subjectName;
-  final int? credits;
-  final String? semester; // kì học
-  final int? attempt;
-  final double? score10; // thang 10
-  final double? score4; // thang 4
-  final String? letter; // điểm chữ A B C D F
-  final bool? passed;
+  final String semester; // Kỳ học
+  final String studentId; // Mã sinh viên
+  final String subjectName; // Tên học phần
+  final String classCode; // Mã lớp học phần
+  final int? credits; // Số tín chỉ
+  final String? formula; // Công thức điểm
+  final String? scoreChar; // Tổng kết (điểm chữ)
+  final double? score10; // Thang 10
+  final double? score4; // Thang 4
+
+  // Nếu bạn muốn hiển thị chi tiết điểm trong DetailResults
+  // thì có thể giữ thêm mảng này, mặc định rỗng
+  final List<String> detailLines;
 
   ResultModel({
-    this.subjectCode,
-    this.subjectName,
+    required this.semester,
+    required this.studentId,
+    required this.subjectName,
+    required this.classCode,
     this.credits,
-    this.semester,
-    this.attempt,
+    this.formula,
+    this.scoreChar,
     this.score10,
     this.score4,
-    this.letter,
-    this.passed,
+    this.detailLines = const [],
   });
 
   factory ResultModel.fromJson(Map<String, dynamic> json) {
     double? toDouble(dynamic v) {
       if (v == null) return null;
-      if (v is num) return v.toDouble();
-      return double.tryParse(v.toString());
-    }
-
-    int? toInt(dynamic v) {
-      if (v == null) return null;
-      if (v is num) return v.toInt();
-      return int.tryParse(v.toString());
-    }
-
-    bool? toBool(dynamic v) {
-      if (v == null) return null;
-      if (v is bool) return v;
-      final s = v.toString().toLowerCase();
-      return s == 'true' || s == '1' || s == 'y';
+      final s = v.toString().replaceAll(',', '.');
+      return double.tryParse(s);
     }
 
     return ResultModel(
-      subjectCode: json['subjectCode'] ?? json['MaMH'] ?? json['code'],
-      subjectName: json['subjectName'] ?? json['TenMH'] ?? json['name'],
-      credits: toInt(json['credits'] ?? json['SoTinChi']),
-      semester: json['semester'] ?? json['HocKy'] ?? json['term'],
-      attempt: toInt(json['attempt'] ?? json['LanThi']),
-      score10: toDouble(json['score10'] ?? json['Diem10'] ?? json['score']),
-      score4: toDouble(json['score4'] ?? json['Diem4']),
-      letter: json['letter'] ?? json['DiemChu'],
-      passed: toBool(json['passed'] ?? json['Dat']),
+      semester: json['Kỳ học']?.toString() ?? '',
+      studentId: json['Mã sinh viên']?.toString() ?? '',
+      subjectName: json['Tên học phần']?.toString() ?? '',
+      classCode: json['Mã lớp học phần']?.toString() ?? '',
+      credits: int.tryParse(json['Số tín chỉ']?.toString() ?? ''),
+      formula: json['Công thức điểm']?.toString(),
+      scoreChar: json['Tổng kết']?.toString(),
+      score10: toDouble(json['Thang 10']),
+      score4: toDouble(json['Thang 4']),
+      // nếu API trả thêm "Chi tiết điểm"
+      detailLines:
+          (json['Chi tiết điểm'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
     );
   }
 }

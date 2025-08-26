@@ -8,7 +8,7 @@ import '../bloc/results_state.dart';
 import '../data/results_repository.dart';
 import 'detail_result.dart';
 
-class ResultsPage extends StatelessWidget {
+class ResultsPage extends StatefulWidget {
   final String studentId;
   final String apiBase;
 
@@ -19,12 +19,19 @@ class ResultsPage extends StatelessWidget {
   });
 
   @override
+  State<ResultsPage> createState() => _ResultsPageState();
+}
+
+class _ResultsPageState extends State<ResultsPage> {
+  int _semesterIndex = 0; // index của kỳ đang chọn (mặc định mới nhất)
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create:
           (_) =>
-              ResultsBloc(ResultsRepository(apiBase))
-                ..add(LoadResults(studentId)),
+              ResultsBloc(ResultsRepository(widget.apiBase))
+                ..add(LoadResults(widget.studentId)),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -46,24 +53,24 @@ class ResultsPage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
-            // Trạng thái lỗi
             if (state is ResultsError) {
               return _ErrorView(
                 message: state.message,
                 onRetry:
-                    () =>
-                        context.read<ResultsBloc>().add(LoadResults(studentId)),
+                    () => context.read<ResultsBloc>().add(
+                      LoadResults(widget.studentId),
+                    ),
               );
             }
 
-            // Trạng thái loaded
             if (state is ResultsLoaded) {
-              final items = state.subjects;
-              if (items.isEmpty) {
+              final all = state.subjects;
+
+              if (all.isEmpty) {
                 return RefreshIndicator(
                   onRefresh:
                       () async => context.read<ResultsBloc>().add(
-                        LoadResults(studentId),
+                        LoadResults(widget.studentId),
                       ),
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -75,10 +82,25 @@ class ResultsPage extends StatelessWidget {
                 );
               }
 
+              // Lấy danh sách kỳ (unique), sort mới nhất trước
+              final semesters =
+                  all.map((e) => e.semesterCode).toSet().toList()
+                    ..sort((a, b) => b.compareTo(a)); // "2510" > "2410"
+
+              // Fix index nếu vượt biên sau khi refresh
+              if (_semesterIndex >= semesters.length) {
+                _semesterIndex = 0;
+              }
+
+              final currentCode = semesters[_semesterIndex];
+              final items =
+                  all.where((e) => e.semesterCode == currentCode).toList();
+
               return RefreshIndicator(
                 onRefresh:
-                    () async =>
-                        context.read<ResultsBloc>().add(LoadResults(studentId)),
+                    () async => context.read<ResultsBloc>().add(
+                      LoadResults(widget.studentId),
+                    ),
                 child: ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: items.length + 1,
@@ -88,17 +110,35 @@ class ResultsPage extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            Icon(Icons.chevron_left, color: Colors.black54),
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.chevron_left,
+                                color: Colors.black54,
+                              ),
+                              onPressed:
+                                  _semesterIndex < semesters.length - 1
+                                      ? () => setState(() => _semesterIndex++)
+                                      : null,
+                            ),
                             Text(
-                              'HỌC KÌ 1, 2024-2025',
-                              style: TextStyle(
+                              _formatSemesterTitle(currentCode),
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                                 color: Colors.black87,
                               ),
                             ),
-                            Icon(Icons.chevron_right, color: Colors.black54),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.chevron_right,
+                                color: Colors.black54,
+                              ),
+                              onPressed:
+                                  _semesterIndex > 0
+                                      ? () => setState(() => _semesterIndex--)
+                                      : null,
+                            ),
                           ],
                         ),
                       );
@@ -107,7 +147,7 @@ class ResultsPage extends StatelessWidget {
                     final s = items[index - 1];
                     final hasTitle = (s.subjectTitle ?? '').trim().isNotEmpty;
                     final subjectTitleText =
-                        hasTitle ? s.subjectTitle!.trim() : s.subjectCode;
+                        hasTitle ? s.subjectTitle!.trim() : s.classCode;
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(
@@ -117,21 +157,29 @@ class ResultsPage extends StatelessWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(8),
                         onTap: () {
-                          final details = [
-                            'Kỳ: ${s.semesterCode}',
-                            'Điểm 10: ${s.score10?.toStringAsFixed(2) ?? '-'}',
-                            'Điểm 4: ${s.score4?.toStringAsFixed(2) ?? '-'}',
-                            'Điểm chữ: ${s.scoreChar ?? '-'}',
-                          ].join('\n');
-
                           showDialog(
                             context: context,
-                            builder: (_) => DetailResults(
-                              subjectCode: s.subjectCode,
-                              subjectTitle: subjectTitleText,
-                              credits: '${s.credits ?? '-'}',
-                              details: details,
-                            ),
+                            builder:
+                                (_) => DetailResults(
+                                  subjectCode: s.classCode, // Mã lớp học phần
+                                  subjectTitle:
+                                      subjectTitleText, // Tên học phần
+                                  credits: '${s.credits ?? '-'}', // Số tín chỉ
+                                  // Truyền dữ liệu chi tiết (nếu bạn đã thêm trong model)
+                                  detailsList: s.detailLines,
+                                  congThucDiem: s.formula,
+
+                                  // Điểm tổng hợp; format 1 chữ số thập phân
+                                  tongKet: s.scoreChar,
+                                  thang10:
+                                      s.score10 != null
+                                          ? s.score10!.toStringAsFixed(1)
+                                          : null,
+                                  thang4:
+                                      s.score4 != null
+                                          ? s.score4!.toStringAsFixed(1)
+                                          : null,
+                                ),
                           );
                         },
                         child: Container(
@@ -153,7 +201,8 @@ class ResultsPage extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         s.classCode,
@@ -201,16 +250,28 @@ class ResultsPage extends StatelessWidget {
               );
             }
 
-            // Fallback an toàn
             return _ErrorView(
               message: 'Lỗi tải dữ liệu',
               onRetry:
-                  () => context.read<ResultsBloc>().add(LoadResults(studentId)),
+                  () => context.read<ResultsBloc>().add(
+                    LoadResults(widget.studentId),
+                  ),
             );
           },
         ),
       ),
     );
+  }
+
+  /// Đổi từ IdCode (ví dụ "2410") -> "HỌC KÌ 1, 2024-2025"
+  String _formatSemesterTitle(String code) {
+    if (code.length < 4) return 'HỌC KÌ ?';
+    final yy = code.substring(0, 2); // "24"
+    final hk = code.substring(2); // "10" hoặc "20"
+    final startYear = 2000 + int.tryParse(yy)!;
+    final endYear = startYear + 1;
+    final hkNum = (hk == '10') ? 1 : 2;
+    return 'HỌC KÌ $hkNum, $startYear-$endYear';
   }
 }
 

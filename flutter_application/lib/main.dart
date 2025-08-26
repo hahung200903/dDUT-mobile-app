@@ -7,7 +7,7 @@ const String ApiBase = String.fromEnvironment(
 );
 
 /// Mã sinh viên mặc định (có thể thay đổi khi đăng nhập)
-const String DefaultStudentId = '101240447';
+const String DefaultStudentId = '102210087';
 
 // http://127.0.0.1:8080/api/results?studentId=101240447
 // http://127.0.0.1:8080/api/stats?studentId=101240447

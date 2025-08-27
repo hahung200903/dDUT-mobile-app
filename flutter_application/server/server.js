@@ -166,6 +166,7 @@ router.get('/stats', async (req, res) => {
 
 
 app.use('/api', router);
+router.get('/health', (req, res) => res.json({ ok: true }));
 
 const port = Number(process.env.PORT || 8080);
 app.listen(port, () => console.log(`REST API listening on :${port}`));

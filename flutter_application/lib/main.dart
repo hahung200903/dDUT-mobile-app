@@ -3,14 +3,15 @@ import 'pages/home.dart';
 
 const String ApiBase = String.fromEnvironment(
   'API_BASE',
-  defaultValue: 'http://127.0.0.1:8080/api',
+  defaultValue: 'http://171.244.142.248/api',
+  // http://127.0.0.1:8080/api
 );
 
 /// Mã sinh viên thay đổi khi đăng nhập
 const String DefaultStudentId = '102210087';
 
-// http://127.0.0.1:8080/api/results?studentId=101240447
-// http://127.0.0.1:8080/api/stats?studentId=101240447
+// http://171.244.142.248/api/results?studentId=102210087
+// http://171.244.142.248/api/stats?studentId=102210087
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

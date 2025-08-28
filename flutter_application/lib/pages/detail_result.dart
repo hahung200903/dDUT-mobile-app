@@ -5,8 +5,12 @@ class DetailResults extends StatelessWidget {
   final String subjectTitle; // Tên học phần
   final String credits; // Số tín chỉ
 
+  /// Danh sách chi tiết dạng chuỗi từ API:
+  /// ["Công thức điểm: [GK]*0.20+[BT]*0.20+[CK]*0.60", "GK: 7.5", "BT: 8.0", "CK: 6.0"]
   final List<String>? detailsList;
 
+  /// Các field cũ vẫn giữ để tương thích, nhưng sẽ được dùng như "fallback"
+  /// nếu detailsList không có giá trị tương ứng.
   final String? congThucDiem;
   final String? diemBT;
   final String? diemGK;
@@ -39,11 +43,14 @@ class DetailResults extends StatelessWidget {
   Widget build(BuildContext context) {
     final parsed = _parseDetails(detailsList);
 
-    final ct = _firstNonEmpty([congThucDiem, parsed['CongThucDiem']]);
-    final bt = _firstNonEmpty([diemBT, parsed['BT']]);
-    final gk = _firstNonEmpty([diemGK, parsed['GK']]);
-    final ck = _firstNonEmpty([diemCK, parsed['CK']]);
-    final qt = _firstNonEmpty([diemQT, parsed['QT']]);
+    // Fallback: nếu payload cũ có những giá trị lẻ (BT/GK/CK/QT) thì ghép vào
+    _mergeLegacyFallback(parsed, {
+      'BT': diemBT,
+      'GK': diemGK,
+      'CK': diemCK,
+      'QT': diemQT,
+    });
+    parsed.formula = _firstNonEmpty([parsed.formula, congThucDiem]);
 
     final tk = _firstNonEmpty([tongKet]);
     final t10 = _firstNonEmpty([thang10]);
@@ -120,34 +127,35 @@ class DetailResults extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Mã lớp học phần:', subjectCode),
+                _kv('Mã lớp học phần', subjectCode),
                 const SizedBox(height: 8.0),
 
-                _buildInfoRow('Số tín chỉ:', credits),
+                _kv('Số tín chỉ', credits),
                 const SizedBox(height: 8.0),
 
-                _buildInfoRow('Công thức điểm:', _displayOrPlaceholder(ct)),
+                _kv('Công thức điểm', _displayOrPlaceholder(parsed.formula)),
                 const SizedBox(height: 8.0),
 
-                _buildInfoRow('Bài tập:', _displayOrPlaceholder(bt)),
+                // CÁC THÀNH PHẦN ĐỘNG THEO CÔNG THỨC
+                ...parsed.components.map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3.0),
+                    child: _kv(
+                      _labelFor(e.key),
+                      _displayOrPlaceholder(e.value),
+                    ),
+                  ),
+                ),
+
+                const Divider(height: 24),
+
+                _kv('Tổng kết', _displayOrPlaceholder(tk)),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Cuối kỳ:', _displayOrPlaceholder(ck)),
+                _kv('Thang 4', _displayOrPlaceholder(t4)),
                 const SizedBox(height: 6.0),
 
-                _buildInfoRow('Giữa kỳ:', _displayOrPlaceholder(gk)),
-                const SizedBox(height: 6.0),
-
-                _buildInfoRow('Quá trình:', _displayOrPlaceholder(qt)),
-                const SizedBox(height: 6.0),
-
-                _buildInfoRow('Tổng kết:', _displayOrPlaceholder(tk)),
-                const SizedBox(height: 6.0),
-
-                _buildInfoRow('Thang 10:', _displayOrPlaceholder(t10)),
-                const SizedBox(height: 6.0),
-
-                _buildInfoRow('Thang 4:', _displayOrPlaceholder(t4)),
+                _kv('Thang 10', _displayOrPlaceholder(t10)),
               ],
             ),
           ),
@@ -156,34 +164,53 @@ class DetailResults extends StatelessWidget {
     );
   }
 
-  /// "CongThucDiem": chuỗi công thức
-  /// BT/GK/CK/QT/... các điểm thành phần
-  Map<String, String> _parseDetails(List<String>? list) {
-    final out = <String, String>{};
-    if (list == null || list.isEmpty) return out;
+  /// Kết quả phân tích `detailsList`
+  /// - [formula]: chuỗi công thức (nếu có)
+  /// - [components]: danh sách (giữ nguyên thứ tự xuất hiện) các cặp "MÃ" -> "điểm"
+  _ParsedDetails _parseDetails(List<String>? list) {
+    final comps = <MapEntry<String, String>>[];
+    String formula = '';
 
-    for (final raw in list) {
-      final s = raw.trim();
-      if (s.isEmpty) continue;
+    if (list != null && list.isNotEmpty) {
+      for (final raw in list) {
+        final s = raw.trim();
+        if (s.isEmpty) continue;
 
-      // Công thức điểm
-      if (s.toLowerCase().startsWith('công thức điểm')) {
+        // Công thức điểm
+        final lower = s.toLowerCase();
+        if (lower.startsWith('công thức điểm')) {
+          final idx = s.indexOf(':');
+          formula = (idx >= 0 ? s.substring(idx + 1) : s).trim();
+          continue;
+        }
+
+        // Các dòng "MÃ: value" bất kỳ (GK, BT, CK, QT, CC, DA, TH, LT, ...).
         final idx = s.indexOf(':');
-        out['CongThucDiem'] = idx >= 0 ? s.substring(idx + 1).trim() : s;
-        continue;
-      }
-
-      // Chuỗi dạng "GK: 8.0", "BT: 7.5", "CK: 6.0", "QT: 9"
-      final kv = s.split(':');
-      if (kv.isNotEmpty) {
-        final key = kv.first.trim().toUpperCase();
-        final value = kv.length >= 2 ? kv.sublist(1).join(':').trim() : '';
-        if (key == 'BT' || key == 'GK' || key == 'CK' || key == 'QT') {
-          out[key] = value;
+        if (idx > 0) {
+          final code = s.substring(0, idx).trim();
+          final value = s.substring(idx + 1).trim();
+          comps.add(MapEntry(code, value));
         }
       }
     }
-    return out;
+
+    return _ParsedDetails(formula: formula, components: comps);
+  }
+
+  /// Ghép các giá trị lẻ kiểu cũ (BT/GK/CK/QT) vào list động nếu detailsList thiếu.
+  void _mergeLegacyFallback(
+    _ParsedDetails parsed,
+    Map<String, String?> legacy,
+  ) {
+    // set hiện có để tránh thêm trùng
+    final existingKeys =
+        parsed.components.map((e) => e.key.toUpperCase()).toSet();
+    legacy.forEach((k, v) {
+      final val = _firstNonEmpty([v]);
+      if (val.isNotEmpty && !existingKeys.contains(k.toUpperCase())) {
+        parsed.components.add(MapEntry(k, val));
+      }
+    });
   }
 
   static String _firstNonEmpty(List<String?> items) {
@@ -196,14 +223,14 @@ class DetailResults extends StatelessWidget {
   static String _displayOrPlaceholder(String s) =>
       (s.isEmpty || s == 'null') ? _placeholder : s;
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _kv(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: 140.0,
           child: Text(
-            label,
+            '$label:',
             style: const TextStyle(fontSize: 14.0, color: Colors.black87),
           ),
         ),
@@ -220,4 +247,45 @@ class DetailResults extends StatelessWidget {
       ],
     );
   }
+
+  /// Đổi nhãn thân thiện hơn cho một số mã thành phần phổ biến.
+  String _labelFor(String code) {
+    switch (code.toUpperCase()) {
+      case 'GK':
+        return 'Giữa kỳ';
+      case 'CK':
+        return 'Cuối kỳ';
+      case 'BT':
+        return 'Bài tập';
+      case 'QT':
+        return 'Quá trình';
+      case 'CC':
+        return 'Chuyên cần';
+      case 'DA':
+        return 'Đồ án';
+      case 'TH':
+        return 'Thực hành';
+      case 'LT':
+        return 'Lý thuyết';
+      case 'KT':
+        return 'Kiểm tra';
+      case 'HD':
+        return 'Hướng dẫn';
+      case 'BV':
+        return 'Bảo vệ';
+      case 'DG':
+        return 'Đánh giá';
+      default:
+        // không biết mã -> trả nguyên mã
+        return code;
+    }
+  }
+}
+
+/// Struct nhỏ giữ kết quả parse
+class _ParsedDetails {
+  String formula;
+  final List<MapEntry<String, String>> components;
+
+  _ParsedDetails({required this.formula, required this.components});
 }

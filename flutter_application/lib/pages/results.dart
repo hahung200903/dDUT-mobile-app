@@ -82,14 +82,22 @@ class _ResultsPageState extends State<ResultsPage> {
                 );
               }
 
-              // Lấy danh sách kỳ (unique), sort mới nhất trước
+              // Lấy danh sách kỳ (unique), sort DESC theo số (an toàn hơn so với string-compare)
               final semesters =
-                  all.map((e) => e.semesterCode).toSet().toList()
-                    ..sort((a, b) => b.compareTo(a)); // "2510" > "2410"
+                  all.map((e) => e.semesterCode).toSet().toList()..sort((a, b) {
+                    final ai = int.tryParse(a) ?? 0;
+                    final bi = int.tryParse(b) ?? 0;
+                    return bi.compareTo(ai); // mới nhất trước
+                  });
 
               // Fix index nếu vượt biên sau khi refresh
               if (_semesterIndex >= semesters.length) {
                 _semesterIndex = 0;
+              }
+
+              // Vẫn phòng hờ trường hợp rỗng
+              if (semesters.isEmpty) {
+                return const Center(child: Text('Không có dữ liệu học kỳ'));
               }
 
               final currentCode = semesters[_semesterIndex];
@@ -120,6 +128,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                   _semesterIndex < semesters.length - 1
                                       ? () => setState(() => _semesterIndex++)
                                       : null,
+                              tooltip: 'Kỳ trước',
                             ),
                             Text(
                               _formatSemesterTitle(currentCode),
@@ -138,6 +147,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                   _semesterIndex > 0
                                       ? () => setState(() => _semesterIndex--)
                                       : null,
+                              tooltip: 'Kỳ sau',
                             ),
                           ],
                         ),
@@ -165,7 +175,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                   subjectTitle:
                                       subjectTitleText, // Tên học phần
                                   credits: '${s.credits ?? '-'}', // Số tín chỉ
-
+                                  // HIỂN THỊ ĐỘNG: dùng mảng "Chi tiết điểm" + công thức từ API
                                   detailsList: s.detailLines,
                                   congThucDiem: s.formula,
 
@@ -184,63 +194,56 @@ class _ResultsPageState extends State<ResultsPage> {
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: const Color(0xFFF2F4F7),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF2F4F7),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 12.0,
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        s.classCode,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black45,
-                                        ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 12.0,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      s.classCode,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black45,
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        subjectTitleText,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          color: Color(0xFF2A74BD),
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      subjectTitleText,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Color(0xFF2A74BD),
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Số TC: ${s.credits ?? '-'}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black54,
-                                        ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Số TC: ${s.credits ?? '-'}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black54,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  s.scoreChar ?? '--/--',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black45,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              ),
+                              Text(
+                                s.scoreChar ?? '--/--',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black45,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -263,15 +266,34 @@ class _ResultsPageState extends State<ResultsPage> {
     );
   }
 
-  /// Đổi từ IdCode (ví dụ "2410") -> "HỌC KÌ 1, 2024-2025"
+  /// Quy tắc: XXYY, với YY:
+  /// 10 -> HỌC KÌ 1 ; 20 -> HỌC KÌ 2 ; 21 -> HỌC KÌ HÈ
   String _formatSemesterTitle(String code) {
-    if (code.length < 4) return 'HỌC KÌ ?';
-    final yy = code.substring(0, 2); // "24"
-    final hk = code.substring(2); // "10" hoặc "20"
-    final startYear = 2000 + int.tryParse(yy)!;
+    // đảm bảo đủ 4 ký tự để tránh lỗi cắt chuỗi
+    final safe = code.padLeft(4, '0');
+
+    final yy = safe.substring(0, 2);
+    final hk = safe.substring(2); // "10" | "20" | "21"
+
+    final startYear = 2000 + (int.tryParse(yy) ?? 0);
     final endYear = startYear + 1;
-    final hkNum = (hk == '10') ? 1 : 2;
-    return 'HỌC KÌ $hkNum, $startYear-$endYear';
+
+    late final String hkText;
+    switch (hk) {
+      case '10':
+        hkText = 'HỌC KÌ 1';
+        break;
+      case '20':
+        hkText = 'HỌC KÌ 2';
+        break;
+      case '21':
+        hkText = 'HỌC KÌ HÈ';
+        break;
+      default:
+        hkText = 'HỌC KÌ 2';
+        break;
+    }
+    return '$hkText, $startYear-$endYear';
   }
 }
 

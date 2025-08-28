@@ -82,7 +82,7 @@ class _ResultsPageState extends State<ResultsPage> {
                 );
               }
 
-              // Lấy danh sách kỳ (unique), sort DESC theo số (an toàn hơn so với string-compare)
+              // Lấy danh sách kỳ , sort giảm dần (theo mã kỳ)
               final semesters =
                   all.map((e) => e.semesterCode).toSet().toList()..sort((a, b) {
                     final ai = int.tryParse(a) ?? 0;
@@ -90,12 +90,10 @@ class _ResultsPageState extends State<ResultsPage> {
                     return bi.compareTo(ai); // mới nhất trước
                   });
 
-              // Fix index nếu vượt biên sau khi refresh
               if (_semesterIndex >= semesters.length) {
                 _semesterIndex = 0;
               }
 
-              // Vẫn phòng hờ trường hợp rỗng
               if (semesters.isEmpty) {
                 return const Center(child: Text('Không có dữ liệu học kỳ'));
               }
@@ -128,7 +126,6 @@ class _ResultsPageState extends State<ResultsPage> {
                                   _semesterIndex < semesters.length - 1
                                       ? () => setState(() => _semesterIndex++)
                                       : null,
-                              tooltip: 'Kỳ trước',
                             ),
                             Text(
                               _formatSemesterTitle(currentCode),
@@ -147,7 +144,6 @@ class _ResultsPageState extends State<ResultsPage> {
                                   _semesterIndex > 0
                                       ? () => setState(() => _semesterIndex--)
                                       : null,
-                              tooltip: 'Kỳ sau',
                             ),
                           ],
                         ),
@@ -175,7 +171,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                   subjectTitle:
                                       subjectTitleText, // Tên học phần
                                   credits: '${s.credits ?? '-'}', // Số tín chỉ
-                                  // HIỂN THỊ ĐỘNG: dùng mảng "Chi tiết điểm" + công thức từ API
+                                  // Chi tiết điểm
                                   detailsList: s.detailLines,
                                   congThucDiem: s.formula,
 
@@ -266,7 +262,7 @@ class _ResultsPageState extends State<ResultsPage> {
     );
   }
 
-  /// Quy tắc: XXYY, với YY:
+  /// Quy tắc: XXYY, với YY là học kì
   /// 10 -> HỌC KÌ 1 ; 20 -> HỌC KÌ 2 ; 21 -> HỌC KÌ HÈ
   String _formatSemesterTitle(String code) {
     // đảm bảo đủ 4 ký tự để tránh lỗi cắt chuỗi

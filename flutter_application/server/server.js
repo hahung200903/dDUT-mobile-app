@@ -25,6 +25,7 @@ async function getPool() {
 
 const router = express.Router();
 
+// Lấy kết quả học tập của sinh viên
 router.get('/results', async (req, res) => {
   try {
     const studentId = String(req.query.studentId || '').trim();
@@ -85,8 +86,6 @@ router.get('/results', async (req, res) => {
         TN: row.CUSTN, VI: row.CUSVI, VD: row.CUSVD,
         DO: row.CUSDO, QT: row.CUSQT, BC: row.CUSBC
       };
-
-     
       const congthucArr = [`Công thức điểm: ${txt(row.CongThucDiem)}`];
       for (const c of comps) congthucArr.push(`${c}: ${mapCUS[c] ?? ''}`);
 
@@ -96,8 +95,8 @@ router.get('/results', async (req, res) => {
         'Tên học phần': txt(row.TenHocPhan),
         'Mã lớp học phần': txt(row.MaLopHocPhan),
         'Số tín chỉ': num(row.SoTinChi),
-        'Chi tiết điểm': congthucArr, 
-        'Tổng kết': txt(row.TongKet),   
+        'Chi tiết điểm': congthucArr,
+        'Tổng kết': txt(row.TongKet),
         'Thang 10': num(row.Thang10),
         'Thang 4': num(row.Thang4),
       };
@@ -110,7 +109,7 @@ router.get('/results', async (req, res) => {
   }
 });
 
-
+// Lấy thông tin học vụ của sinh viên
 router.get('/stats', async (req, res) => {
   try {
     const studentId = String(req.query.studentId || '').trim();
@@ -120,50 +119,53 @@ router.get('/stats', async (req, res) => {
 
     const p = await getPool();
 
-    const perSemester = await p.request()
+    // Theo từng kỳ: GPA từ DiemTBTL thang 4, RL từ DiemRL thang 100, tín chỉ đăng ký từ HPDangky
+    const per = await p.request()
       .input('mahs', sql.VarChar, studentId)
       .query(`
-        SELECT 
+        SELECT
           IdCode AS semesterCode,
-          CAST(
-            SUM(CAST(ISNULL(SoTC,0) AS float) * CAST(ISNULL(Diem,0) AS float))
-            / NULLIF(SUM(CAST(ISNULL(SoTC,0) AS float)),0)
-          AS decimal(5,2)) AS gpa10,
-          SUM(ISNULL(SoTC,0)) AS tc
-        FROM [DHBK_CDS].[dbo].[tmDiemkyhoc]
+          CAST(ISNULL(DiemTBTL, 0) AS decimal(4,2)) AS gpa4,
+          CAST(ISNULL(DiemRL, 0) AS int)            AS drl,
+          CAST(ISNULL(HPDangky, 0) AS int)          AS creditsInSemester
+        FROM [DHBK_CDS].[dbo].[TmHocvu]
         WHERE MaHS = @mahs
-        GROUP BY IdCode
         ORDER BY TRY_CONVERT(int, IdCode)
       `);
 
+    // Tổng quan: GPA & tổng tín chỉ đăng ký (HPDangky) từ TmHocvuTK
     const overall = await p.request()
       .input('mahs', sql.VarChar, studentId)
       .query(`
-        SELECT 
-          CAST(
-            SUM(CAST(ISNULL(SoTC,0) AS float) * CAST(ISNULL(Diem,0) AS float))
-            / NULLIF(SUM(CAST(ISNULL(SoTC,0) AS float)),0)
-          AS decimal(5,2)) AS gpa10,
-          SUM(ISNULL(SoTC,0)) AS totalCredits
-        FROM [DHBK_CDS].[dbo].[tmDiemkyhoc]
+        SELECT TOP 1
+          CAST(ISNULL(DiemTBTL, 0) AS decimal(4,2)) AS gpa4,
+          CAST(ISNULL(HPDangky, 0) AS int)          AS totalCredits,
+          Namhoc
+        FROM [DHBK_CDS].[dbo].[TmHocvuTK]
         WHERE MaHS = @mahs
+        ORDER BY Namhoc DESC
       `);
 
-    return res.json({
-      semesters: perSemester.recordset.map(r => String(r.semesterCode)),
-      gpaPerSemester: perSemester.recordset.map(r => Number(r.gpa10)),
-      creditsPerSemester: perSemester.recordset.map(r => Number(r.tc)),
+    const rows = per.recordset || [];
+    const ov = overall.recordset?.[0] || null;
+
+    res.json({
+      semesters: rows.map(r => String(r.semesterCode)),
+      gpaPerSemester: rows.map(r => Number(r.gpa4)),         // GPA thang 4
+      conductPerSemester: rows.map(r => Number(r.drl)),      // ĐRL thang 100
+      creditsPerSemester: rows.map(r => Number(r.creditsInSemester)), // HP đăng ký từng kỳ
       overall: {
-        gpa10: overall.recordset[0]?.gpa10 ?? null,
-        totalCredits: Number(overall.recordset[0]?.totalCredits ?? 0),
-      },
+        gpa4: ov ? Number(ov.gpa4) : null,
+        totalCredits: ov ? Number(ov.totalCredits) : 0,      // tổng HP đăng ký
+        stage: ov ? String(ov.Namhoc ?? '') : '',
+        warningLevel: '--/--'
+      }
     });
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ error: e.message || 'Internal Server Error' });
+    res.status(500).json({ error: e.message || 'Internal Server Error' });
   }
 });
-
 
 app.use('/api', router);
 router.get('/health', (req, res) => res.json({ ok: true }));

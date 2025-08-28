@@ -13,6 +13,7 @@ analyzer:
     depend_on_referenced_packages: ignore
     deprecated_member_use: ignore
     file_names: ignore
+    no_leading_underscores_for_local_identifiers: ignore
     prefer_is_empty: ignore
     prefer_null_aware_operators: ignore
     use_super_parameters: ignore

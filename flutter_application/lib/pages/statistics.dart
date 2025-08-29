@@ -336,11 +336,14 @@ class _LineChart extends StatelessWidget {
                 showTitles: true,
                 reservedSize: 36,
                 interval: yInterval,
-                getTitlesWidget:
-                    (v, meta) => Text(
-                      v.toInt().toString(),
-                      style: const TextStyle(fontSize: 11),
-                    ),
+                getTitlesWidget: (v, meta) {
+                  final isInt = (v - v.roundToDouble()).abs() < 1e-6;
+                  if (!isInt) return const SizedBox.shrink();
+                  return Text(
+                    v.toInt().toString(),
+                    style: const TextStyle(fontSize: 11),
+                  );
+                },
               ),
             ),
             bottomTitles: AxisTitles(

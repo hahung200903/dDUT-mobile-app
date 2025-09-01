@@ -1,35 +1,20 @@
 import 'dart:convert';
 import 'dart:io' show HttpHeaders;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 const String _apiFromEnvironment = String.fromEnvironment(
   'API_BASE_URL',
   defaultValue: '',
 );
-const bool _useEmulator =
-    bool.hasEnvironment('USE_EMULATOR') && bool.fromEnvironment('USE_EMULATOR');
-
-/// Deployed region (khớp backend):
-const String kRegion = 'asia-southeast1';
-
-/// Build base URL cho Functions Emulator:
-String _emulatorBase(String projectId) {
-  final host = kIsWeb ? '127.0.0.1' : '10.0.2.2';
-  return 'http://$host:5001/$projectId/$kRegion/api';
-}
 
 class ApiClient {
-  ApiClient({required this.projectId, http.Client? httpClient})
-    : _client = httpClient ?? http.Client();
+  ApiClient({http.Client? httpClient}) : _client = httpClient ?? http.Client();
 
-  final String projectId;
   final http.Client _client;
 
   late final String baseUrl = () {
     if (_apiFromEnvironment.isNotEmpty) return _apiFromEnvironment;
-    if (_useEmulator) return _emulatorBase(projectId);
-    return 'https://$kRegion-$projectId.cloudfunctions.net/api';
+    throw Exception('Missing API_BASE_URL');
   }();
 
   Map<String, String> _defaultHeaders([Map<String, String>? headers]) => {
@@ -41,7 +26,7 @@ class ApiClient {
   Uri _buildUri(String path, [Map<String, String>? query]) =>
       Uri.parse('$baseUrl$path').replace(queryParameters: query);
 
-  /// GET trả List (tự động bóc field List trong object – ví dụ "Kết quả học tập": [...])
+  /// GET trả List
   Future<List<dynamic>> getList(
     String path, {
     Map<String, String>? query,
@@ -55,7 +40,6 @@ class ApiClient {
       if (body is List) return body;
 
       if (body is Map) {
-        // Ưu tiên field 'data', nếu không có thì lấy field đầu tiên là List
         final v = body['data'];
         if (v is List) return v;
 
@@ -63,7 +47,6 @@ class ApiClient {
           if (entry.value is List) return entry.value as List;
         }
       }
-      // fallback: bọc body vào List
       return [body];
     }
 

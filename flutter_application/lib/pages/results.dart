@@ -6,6 +6,7 @@ import '../bloc/results_event.dart';
 import '../bloc/results_state.dart';
 
 import '../data/results_repository.dart';
+import '../data/api_client.dart';
 import 'detail_result.dart';
 
 class ResultsPage extends StatefulWidget {
@@ -27,10 +28,10 @@ class _ResultsPageState extends State<ResultsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
+    return BlocProvider<ResultsBloc>(
       create:
           (_) =>
-              ResultsBloc(ResultsRepository(widget.apiBase))
+              ResultsBloc(ResultsRepository(ApiClient(baseUrl: widget.apiBase)))
                 ..add(LoadResults(widget.studentId)),
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -83,12 +84,12 @@ class _ResultsPageState extends State<ResultsPage> {
               }
 
               // Lấy danh sách kỳ , sort giảm dần (theo mã kỳ)
-              final semesters =
-                  all.map((e) => e.semesterCode).toSet().toList()..sort((a, b) {
-                    final ai = int.tryParse(a) ?? 0;
-                    final bi = int.tryParse(b) ?? 0;
-                    return bi.compareTo(ai); // mới nhất trước
-                  });
+              final semesters = all.map((e) => e.semesterCode).toSet().toList();
+              semesters.sort((a, b) {
+                final ai = int.tryParse(a) ?? 0;
+                final bi = int.tryParse(b) ?? 0;
+                return bi.compareTo(ai);
+              });
 
               if (_semesterIndex >= semesters.length) {
                 _semesterIndex = 0;

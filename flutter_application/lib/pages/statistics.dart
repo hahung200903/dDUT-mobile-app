@@ -1,9 +1,14 @@
-import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-class StatisticsPage extends StatefulWidget {
+import '../bloc/stats_bloc.dart';
+import '../data/stats_repository.dart';
+import '../data/api_client.dart';
+import '../models/stats_model.dart';
+
+class StatisticsPage extends StatelessWidget {
   const StatisticsPage({
     super.key,
     required this.studentId,
@@ -14,38 +19,20 @@ class StatisticsPage extends StatefulWidget {
   final String apiBase;
 
   @override
-  State<StatisticsPage> createState() => _StatisticsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider<StatsBloc>(
+      create:
+          (_) =>
+              StatsBloc(StatsRepository(ApiClient(baseUrl: apiBase)))
+                ..add(StatsRequested(studentId: studentId)),
+      child: _StatisticsView(studentId: studentId),
+    );
+  }
 }
 
-class _StatisticsPageState extends State<StatisticsPage> {
-  late Future<Map<String, dynamic>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _fetchStats();
-  }
-
-  Future<Map<String, dynamic>> _fetchStats() async {
-    final uri = Uri.parse(
-      '${widget.apiBase}/stats',
-    ).replace(queryParameters: {'studentId': widget.studentId});
-    final res = await http.get(
-      uri,
-      headers: const {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json; charset=utf-8',
-      },
-    );
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      final body = json.decode(utf8.decode(res.bodyBytes));
-      return body is Map<String, dynamic> ? body : {'data': body};
-    }
-    throw Exception(
-      'Failed to fetch stats for ${widget.studentId}: '
-      'ClientException: ${res.statusCode} ${res.body}',
-    );
-  }
+class _StatisticsView extends StatelessWidget {
+  const _StatisticsView({required this.studentId});
+  final String studentId;
 
   @override
   Widget build(BuildContext context) {
@@ -64,183 +51,167 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+      body: BlocBuilder<StatsBloc, StatsState>(
+        builder: (context, state) {
+          if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snap.hasError) {
+          if (state.error != null) {
             return _ErrorView(
-              message: 'Lỗi: ${snap.error}',
-              onRetry: () => setState(() => _future = _fetchStats()),
+              message: state.error!,
+              onRetry:
+                  () => context.read<StatsBloc>().add(
+                    StatsRequested(studentId: studentId),
+                  ),
             );
           }
 
-          final data = snap.data!;
-          final semesters = (data['semesters'] as List).cast<String>();
+          final StatsModel data = state.data!;
 
-          // GPA từng kỳ (thang 4)
-          final gpaPerSem =
-              (data['gpaPerSemester'] as List)
-                  .cast<num>()
-                  .map((e) => e.toDouble())
-                  .toList();
-
-          // Điểm rèn luyện thang 100
-          final conductScores =
-              ((data['conductPerSemester'] as List?) ?? const [])
-                  .cast<num>()
-                  .map((e) => e.toDouble())
-                  .toList();
-
-          // TC đăng ký từng kỳ
+          final semesters = data.semesters;
+          final gpaPerSem = data.gpaPerSemester; // thang 4
+          final conductScores = data.conductPerSemester; // ĐRL 0-100
           final credits =
-              (data['creditsPerSemester'] as List)
-                  .cast<num>()
-                  .map((e) => e.toDouble())
-                  .toList();
+              data.creditsPerSemester.map((e) => e.toDouble()).toList();
 
-          // Tổng quan
-          final overall = (data['overall'] as Map?) ?? const {};
-          final double? overallGpa4 =
-              (overall['gpa4'] as num?)?.toDouble() ??
-              (overall['gpa10'] as num?)?.toDouble();
-          final totalCredits =
-              (overall['totalCredits'] as num?)?.toDouble() ?? 0;
-          final warningLevel = overall['warningLevel'];
-          final studyStage =
-              (overall['stage'] ?? overall['studyStage'])?.toString();
+          final double? overallGpa4 = data.gpa4 ?? data.gpa10;
+          final double totalCredits = data.totalCredits.toDouble();
+          final String? warningLevel = data.warningLevel;
+          final String? studyStage = data.stage;
 
-          // Y-max cho biểu đồ tín chỉ
-          double creditsYMax = () {
+          final double creditsYMax = () {
             if (credits.isEmpty) return 10.0;
-            final maxVal = credits.reduce((a, b) => a > b ? a : b);
-            final nextTen = ((maxVal ~/ 10) + 1) * 10; // 20 -> 30, 22 -> 30
-            return nextTen.toDouble();
+            final maxVal = credits.reduce(math.max);
+            return (((maxVal ~/ 10) + 1) * 10).toDouble();
           }();
 
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A74BD),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 8,
-                            ),
-                            child: _BigMetricCard(
-                              value:
-                                  overallGpa4 == null
-                                      ? '--'
-                                      : overallGpa4.toStringAsFixed(2),
-                              label: 'GPA (thang 4)',
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 2,
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          color: const Color(0xFFFFFFFF),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 10,
-                            ),
-                            child: _InfoSummaryInline(
-                              totalCredits: totalCredits,
-                              warningLevel: warningLevel?.toString(),
-                              studyStage: studyStage,
+          return RefreshIndicator(
+            onRefresh:
+                () async => context.read<StatsBloc>().add(
+                  StatsRefreshed(studentId: studentId),
+                ),
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 24),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A74BD),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                              child: _BigMetricCard(
+                                value:
+                                    overallGpa4 == null
+                                        ? '--'
+                                        : overallGpa4.toStringAsFixed(2),
+                                label: 'GPA (thang 4)',
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          Container(
+                            width: 2,
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            color: const Color(0xFFFFFFFF),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 10,
+                              ),
+                              child: _InfoSummaryInline(
+                                totalCredits: totalCredits,
+                                warningLevel: warningLevel?.toString(),
+                                studyStage: studyStage,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // GPA từng kỳ thang 4
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: _ChartCard(
-                  title: 'GPA từng kỳ',
-                  child: _LineChart(
-                    xLabels: semesters,
-                    values: gpaPerSem,
-                    minY: 0,
-                    maxY: 4,
-                    yInterval: 0.5,
+                // GPA từng kỳ
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: _ChartCard(
+                    title: 'GPA từng kỳ',
+                    child: _LineChart(
+                      xLabels: semesters,
+                      values: gpaPerSem,
+                      minY: 0,
+                      maxY: 4,
+                      yInterval: 0.5,
+                    ),
                   ),
                 ),
-              ),
 
-              // Điểm rèn luyện thang 100
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: _ChartCard(
-                  title: 'Điểm rèn luyện từng kỳ',
-                  child:
-                      (conductScores.isNotEmpty)
-                          ? _LineChart(
-                            xLabels: semesters,
-                            values: conductScores,
-                            minY: 0,
-                            maxY: 100,
-                            yInterval: 10,
-                          )
-                          : const _EmptyChart(),
-                ),
-              ),
-
-              // Số TC đăng ký từng kỳ
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: _ChartCard(
-                  title: 'Số TC đăng ký từng kỳ',
-                  child: _LineChart(
-                    xLabels: semesters,
-                    values: credits,
-                    minY: 0,
-                    maxY: creditsYMax,
-                    yInterval: 5,
+                // Điểm rèn luyện
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: _ChartCard(
+                    title: 'Điểm rèn luyện từng kỳ',
+                    child:
+                        (conductScores.isNotEmpty)
+                            ? _LineChart(
+                              xLabels: semesters,
+                              values: conductScores,
+                              minY: 0,
+                              maxY: 100,
+                              yInterval: 10,
+                            )
+                            : const _EmptyChart(),
                   ),
                 ),
-              ),
-            ],
+
+                // Số TC đăng ký
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: _ChartCard(
+                    title: 'Số TC đăng ký từng kỳ',
+                    child: _LineChart(
+                      xLabels: semesters,
+                      values: credits,
+                      minY: 0,
+                      maxY: creditsYMax,
+                      yInterval: 5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -313,19 +284,19 @@ class _LineChart extends StatelessWidget {
                 color: Color(0xFF133D87),
                 width: 1.5,
               ),
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots
-                    .map(
-                      (spot) => LineTooltipItem(
-                        spot.y.toString(),
-                        const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF133D87),
-                        ),
-                      ),
-                    )
-                    .toList();
-              },
+              getTooltipItems:
+                  (touchedSpots) =>
+                      touchedSpots
+                          .map(
+                            (spot) => LineTooltipItem(
+                              spot.y.toString(),
+                              const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF133D87),
+                              ),
+                            ),
+                          )
+                          .toList(),
             ),
           ),
           gridData: FlGridData(show: true),

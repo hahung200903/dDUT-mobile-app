@@ -1,7 +1,5 @@
-// lib/data/results_repository.dart
-import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'api_client.dart';
 
 class SubjectResult {
   final String semesterCode;
@@ -38,13 +36,10 @@ class SubjectResult {
     scoreChar: j['scoreChar'] as String?,
     score4: (j['score4'] as num?)?.toDouble(),
     subjectTitle: j['subjectTitle'] as String?,
-    formula: j['formula'] as String?, // 👈
+    formula: j['formula'] as String?,
     detailLines:
         (j['detailLines'] as List?)
-            ?.map(
-              (e) => // 👈
-                  e?.toString() ?? '',
-            )
+            ?.map((e) => e?.toString() ?? '')
             .where((s) => s.trim().isNotEmpty)
             .toList() ??
         const [],
@@ -52,33 +47,8 @@ class SubjectResult {
 }
 
 class ResultsRepository {
-  final String baseUrl;
-  final http.Client _client;
-
-  ResultsRepository(this.baseUrl, {http.Client? client})
-    : _client = client ?? http.Client();
-
-  Map<String, String> get _headers => const {
-    HttpHeaders.acceptHeader: 'application/json',
-  };
-
-  Uri _u(String path, [Map<String, String?> q = const {}]) {
-    final base = Uri.parse(baseUrl);
-
-    final basePath =
-        base.path.endsWith('/')
-            ? base.path.substring(0, base.path.length - 1)
-            : base.path;
-    final joined =
-        '${base.origin}$basePath${path.startsWith('/') ? path : '/$path'}';
-
-    final qp = <String, String>{};
-    q.forEach((k, v) {
-      if (v != null && v.isNotEmpty) qp[k] = v;
-    });
-
-    return Uri.parse(joined).replace(queryParameters: qp);
-  }
+  ResultsRepository(this._api);
+  final ApiClient _api;
 
   int? _toInt(dynamic v) {
     if (v == null) return null;
@@ -106,7 +76,7 @@ class ResultsRepository {
     final subjectTitle = raw['subjectTitle'] ?? raw['Tên học phần'];
     final formula = raw['formula'] ?? raw['Công thức điểm'];
 
-    // "Chi tiết điểm" có thể là List hoặc không có
+    // "Chi tiết điểm" là List hoặc không có
     final rawDetail = raw['detailLines'] ?? raw['Chi tiết điểm'];
     List<String> detailLines = const [];
     if (rawDetail is List) {
@@ -119,58 +89,38 @@ class ResultsRepository {
 
     return {
       'semesterCode': _toStr(semesterCode),
-      'subjectCode': _toStr(
-        raw['subjectCode'],
-      ), // có thể rỗng vì SELECT hiện tại chưa có
+      'subjectCode': _toStr(raw['subjectCode']),
       'classCode': _toStr(classCode),
       'credits': _toInt(credits),
       'score10': _toDouble(score10),
       'score4': _toDouble(score4),
       'scoreChar': scoreChar == null ? null : _toStr(scoreChar),
       'subjectTitle': subjectTitle == null ? null : _toStr(subjectTitle),
-
       'formula': formula == null ? null : _toStr(formula),
       'detailLines': detailLines,
     };
   }
 
   Future<List<SubjectResult>> fetchResults(String studentId) async {
-    final uri = _u('/results', {'studentId': studentId});
-
-    final res = await _client
-        .get(uri, headers: _headers)
-        .timeout(
-          const Duration(seconds: 20),
-          onTimeout: () => http.Response('Request timeout', 408),
-        );
-
-    if (res.statusCode != 200) {
-      throw HttpException('GET $uri failed [${res.statusCode}]: ${res.body}');
+    if (studentId.trim().isEmpty) {
+      throw ArgumentError('studentId is required and must not be empty');
     }
 
-    final decoded = json.decode(utf8.decode(res.bodyBytes));
+    try {
+      final list = await _api.getList(
+        '/results',
+        query: {'studentId': studentId},
+      );
 
-    List list;
-    if (decoded is List) {
-      list = decoded;
-    } else if (decoded is Map<String, dynamic>) {
-      list =
-          (decoded['Kết quả học tập'] as List?) ??
-          (decoded['results'] as List?) ??
-          (decoded['data'] as List?) ??
-          const [];
-    } else {
-      list = const [];
+      return list
+          .whereType<Map>()
+          .map(_normalizeItem)
+          .map((m) => SubjectResult.fromJson(Map<String, dynamic>.from(m)))
+          .toList();
+    } on HttpException {
+      rethrow;
+    } catch (e) {
+      throw HttpException('Failed to fetch results for $studentId: $e');
     }
-
-    return list
-        .whereType<Map>()
-        .map((e) => _normalizeItem(e))
-        .map((m) => SubjectResult.fromJson(Map<String, dynamic>.from(m)))
-        .toList();
-  }
-
-  void dispose() {
-    _client.close();
   }
 }

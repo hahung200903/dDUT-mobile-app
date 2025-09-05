@@ -9,8 +9,6 @@ class DetailResults extends StatelessWidget {
   /// ["Công thức điểm: [GK]*0.20+[BT]*0.20+[CK]*0.60", "GK: 7.5", "BT: 8.0", "CK: 6.0"]
   final List<String>? detailsList;
 
-  /// Các field cũ vẫn giữ để tương thích, nhưng sẽ được dùng như "fallback"
-  /// nếu detailsList không có giá trị tương ứng.
   final String? congThucDiem;
   final String? diemBT;
   final String? diemGK;
@@ -43,7 +41,6 @@ class DetailResults extends StatelessWidget {
   Widget build(BuildContext context) {
     final parsed = _parseDetails(detailsList);
 
-    // Fallback: nếu payload cũ có những giá trị lẻ (BT/GK/CK/QT) thì ghép vào
     _mergeLegacyFallback(parsed, {
       'BT': diemBT,
       'GK': diemGK,
@@ -136,7 +133,7 @@ class DetailResults extends StatelessWidget {
                 _kv('Công thức điểm', _displayOrPlaceholder(parsed.formula)),
                 const SizedBox(height: 8.0),
 
-                // CÁC THÀNH PHẦN ĐỘNG THEO CÔNG THỨC
+                // Các thành phần động theo công thức
                 ...parsed.components.map(
                   (e) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 3.0),
@@ -166,7 +163,7 @@ class DetailResults extends StatelessWidget {
 
   /// Kết quả phân tích `detailsList`
   /// - [formula]: chuỗi công thức (nếu có)
-  /// - [components]: danh sách (giữ nguyên thứ tự xuất hiện) các cặp "MÃ" -> "điểm"
+  /// - [components]: danh sách (giữ nguyên thứ tự xuất hiện) các cặp "mã" -> "điểm"
   _ParsedDetails _parseDetails(List<String>? list) {
     final comps = <MapEntry<String, String>>[];
     String formula = '';
@@ -184,7 +181,7 @@ class DetailResults extends StatelessWidget {
           continue;
         }
 
-        // Các dòng "MÃ: value" bất kỳ (GK, BT, CK, QT, CC, DA, TH, LT, ...).
+        // Các dòng "mã: value" bất kỳ (GK, BT, CK, QT, CC, DA, TH, LT, ...).
         final idx = s.indexOf(':');
         if (idx > 0) {
           final code = s.substring(0, idx).trim();
@@ -248,35 +245,77 @@ class DetailResults extends StatelessWidget {
     );
   }
 
-  /// Đổi nhãn thân thiện hơn cho một số mã thành phần phổ biến.
   String _labelFor(String code) {
     switch (code.toUpperCase()) {
-      case 'GK':
-        return 'Giữa kỳ';
-      case 'CK':
-        return 'Cuối kỳ';
       case 'BT':
         return 'Bài tập';
-      case 'QT':
-        return 'Quá trình';
+      case 'BV':
+        return 'Bảo vệ';
       case 'CC':
         return 'Chuyên cần';
       case 'DA':
-        return 'Đồ án';
-      case 'TH':
-        return 'Thực hành';
+        return 'Đánh giá';
+      case 'DG':
+        return 'Đánh giá của Giảng viên';
+      case 'GK':
+        return 'Giữa kỳ';
       case 'LT':
         return 'Lý thuyết';
+      case 'CK':
+        return 'Cuối kỳ';
+      case 'TH':
+        return 'Thực hành';
+      case 'LN':
+        return 'Nghe';
+      case 'RD':
+        return 'Đọc';
       case 'KT':
         return 'Kiểm tra';
+      case 'TT':
+        return 'Thực tập';
       case 'HD':
-        return 'Hướng dẫn';
-      case 'BV':
-        return 'Bảo vệ';
-      case 'DG':
-        return 'Đánh giá';
+        return 'Hoạt động học tích cực';
+      case 'B1':
+        return 'Bài tập 1';
+      case 'B2':
+        return 'Bài tập 2';
+      case 'B3':
+        return 'Bài tập 3';
+      case 'G1':
+        return 'Giữa kỳ 1';
+      case 'G2':
+        return 'Giữa kỳ 2';
+      case 'T1':
+        return 'Thuyết trình 1';
+      case 'T2':
+        return 'Thuyết trình 2';
+      case 'T3':
+        return 'Thuyết trình 3';
+      case 'T4':
+        return 'Thuyết trình';
+      case 'TN':
+        return 'Thí nghiệm';
+      case 'VI':
+        return 'Kiểm tra viết';
+      case 'VD':
+        return 'Kiểm tra vấn đáp';
+      case 'BL':
+        return 'Bài tập lớn';
+      case 'D1':
+        return 'Vấn đáp 1';
+      case 'DO':
+        return 'Đồ án';
+      case 'QT':
+        return 'Quá trình';
+      case 'TD':
+        return 'Tiến độ';
+      case 'BC':
+        return 'Báo cáo';
+      case 'H1':
+        return 'Hướng dẫn 1';
+      case 'H2':
+        return 'Hướng dẫn 2';
       default:
-        // không biết mã -> trả nguyên mã
         return code;
     }
   }

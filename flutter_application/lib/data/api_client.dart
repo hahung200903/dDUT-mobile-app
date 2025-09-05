@@ -3,19 +3,21 @@ import 'dart:io' show HttpHeaders;
 import 'package:http/http.dart' as http;
 
 const String _apiFromEnvironment = String.fromEnvironment(
-  'API_BASE_URL',
+  'API_BASE',
   defaultValue: '',
 );
 
 class ApiClient {
-  ApiClient({http.Client? httpClient}) : _client = httpClient ?? http.Client();
+  ApiClient({String? baseUrl, http.Client? httpClient})
+    : baseUrl = (baseUrl ?? _apiFromEnvironment).trim(),
+      _client = httpClient ?? http.Client() {
+    if (this.baseUrl.isEmpty) {
+      throw Exception('Missing API_BASE');
+    }
+  }
 
+  final String baseUrl;
   final http.Client _client;
-
-  late final String baseUrl = () {
-    if (_apiFromEnvironment.isNotEmpty) return _apiFromEnvironment;
-    throw Exception('Missing API_BASE_URL');
-  }();
 
   Map<String, String> _defaultHeaders([Map<String, String>? headers]) => {
     HttpHeaders.acceptHeader: 'application/json',
@@ -23,8 +25,16 @@ class ApiClient {
     ...?headers,
   };
 
+  String _join(String base, String path) {
+    var b = base;
+    var p = path;
+    if (b.endsWith('/')) b = b.substring(0, b.length - 1);
+    if (!p.startsWith('/')) p = '/$p';
+    return '$b$p';
+  }
+
   Uri _buildUri(String path, [Map<String, String>? query]) =>
-      Uri.parse('$baseUrl$path').replace(queryParameters: query);
+      Uri.parse(_join(baseUrl, path)).replace(queryParameters: query);
 
   /// GET trả List
   Future<List<dynamic>> getList(

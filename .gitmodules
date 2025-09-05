@@ -1,0 +1,3 @@
+[submodule "d_dut"]
+	path = d_dut
+	url = https://gitlab.com/dut-tolaptrinh/d_dut.git

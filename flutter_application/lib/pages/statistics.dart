@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../bloc/stats_bloc.dart';
 import '../data/stats_repository.dart';
@@ -44,10 +45,26 @@ class _StatisticsView extends StatelessWidget {
         backgroundColor: const Color(0xFF2A74BD),
         foregroundColor: Colors.white,
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 22),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: Colors.white,
+          tooltip: null,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_none_rounded),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: SvgPicture.asset(
+              'assets/icons/solar_bell-bold.svg',
+              width: 26,
+              height: 26,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
           ),
         ],
       ),

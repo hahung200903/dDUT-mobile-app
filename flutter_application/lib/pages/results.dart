@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../bloc/results_bloc.dart';
 import '../bloc/results_event.dart';
@@ -41,10 +42,21 @@ class _ResultsPageState extends State<ResultsPage> {
           backgroundColor: const Color(0xFF2A74BD),
           iconTheme: const IconThemeData(color: Colors.white),
           titleTextStyle: const TextStyle(color: Colors.white, fontSize: 22),
-          actions: const [
+
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            color: Colors.white,
+            tooltip: null,
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          actions: [
             Padding(
-              padding: EdgeInsets.only(right: 8.0),
-              child: Icon(Icons.notifications_none, color: Colors.white),
+              padding: const EdgeInsets.only(right: 8.0),
+              child: SvgPicture.asset(
+                'assets/icons/solar_bell-bold.svg',
+                color: Colors.white,
+              ),
             ),
           ],
         ),

@@ -8,7 +8,7 @@ const String ApiBase = String.fromEnvironment(
 );
 
 /// Mã sinh viên thay đổi khi đăng nhập
-const String DefaultStudentId = '102210087';
+const String DefaultStudentId = '102210088';
 
 // http://171.244.142.248/ddut/api/results?studentId=102210087
 // http://171.244.142.248/ddut/api/stats?studentId=102210087

@@ -113,59 +113,80 @@ router.get('/results', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const studentId = String(req.query.studentId || '').trim();
-    if (!studentId) {
-      return res.status(400).json({ error: 'Missing studentId' });
+    if (!studentId) return res.status(400).json({ error: 'Missing studentId' });
+    if (!/^[A-Za-z0-9._-]{3,50}$/.test(studentId)) {
+      return res.status(400).json({ error: 'Invalid studentId format' });
     }
 
     const p = await getPool();
+    const rq = p.request();
+    rq.multiple = true;
+    rq.input('mahs', sql.VarChar, studentId);
 
-    // Theo từng kỳ: GPA từ DiemTBTL thang 4, RL từ DiemRL thang 100, tín chỉ đăng ký từ HPDangky
-    const per = await p.request()
-      .input('mahs', sql.VarChar, studentId)
-      .query(`
+    const result = await rq.query(`
+      -- 1) Dữ liệu theo từng kỳ
+      SELECT
+        IdCode                                      AS semesterCode,
+        CAST(ISNULL(DiemTBTL, 0) AS decimal(4,2))  AS gpa4,
+        CAST(ISNULL(DiemRL,   0) AS int)           AS drl,
+        CAST(ISNULL(HPDangky, 0) AS int)           AS creditsInSemester
+      FROM [DHBK_CDS].[dbo].[TmHocvu]
+      WHERE MaHS = @mahs
+      ORDER BY TRY_CONVERT(int, NULLIF(IdCode,'0'));
+
+      -- 2) Tổng quan
+      ;WITH hv AS (
         SELECT
-          IdCode AS semesterCode,
-          CAST(ISNULL(DiemTBTL, 0) AS decimal(4,2)) AS gpa4,
-          CAST(ISNULL(DiemRL, 0) AS int)            AS drl,
-          CAST(ISNULL(HPDangky, 0) AS int)          AS creditsInSemester
+          IdCode,
+          CAST(ISNULL(DiemTBTL,  0) AS decimal(4,2)) AS gpa4_latest_candidate,
+          CAST(ISNULL(HPTichLuy, 0) AS int)          AS total_acc_credits,   -- tên cột này
+          Namhoc,
+          CAST(ISNULL(DiemRL,    0) AS float)        AS drl_for_avg
         FROM [DHBK_CDS].[dbo].[TmHocvu]
         WHERE MaHS = @mahs
-        ORDER BY TRY_CONVERT(int, IdCode)
-      `);
+      ),
+      latest AS (
+        SELECT TOP (1)
+          gpa4_latest_candidate AS gpa4_latest,
+          total_acc_credits      AS total_acc_credits,  -- dùng đúng tên ở trên
+          Namhoc                 AS stage
+        FROM hv
+        ORDER BY TRY_CONVERT(int, NULLIF(IdCode,'0')) DESC
+      ),
+      agg AS (
+        SELECT AVG(drl_for_avg) AS avg_drl FROM hv
+      )
+      SELECT
+        CAST(l.gpa4_latest       AS decimal(4,2)) AS gpa4,
+        CAST(l.total_acc_credits AS int)          AS totalAccumCredits,
+        CAST(a.avg_drl           AS decimal(5,2)) AS avgConduct,
+        l.stage                                     AS stage
+      FROM latest l CROSS JOIN agg a;
+    `);
 
-    // Tổng quan: GPA & tổng tín chỉ đăng ký (HPDangky) từ TmHocvuTK
-    const overall = await p.request()
-      .input('mahs', sql.VarChar, studentId)
-      .query(`
-        SELECT TOP 1
-          CAST(ISNULL(DiemTBTL, 0) AS decimal(4,2)) AS gpa4,
-          CAST(ISNULL(HPDangky, 0) AS int)          AS totalCredits,
-          Namhoc
-        FROM [DHBK_CDS].[dbo].[TmHocvuTK]
-        WHERE MaHS = @mahs
-        ORDER BY Namhoc DESC
-      `);
+    const per = result.recordsets?.[0] ?? [];
+    const ov  = result.recordsets?.[1]?.[0] ?? null;
+    const toNum = v => (v === null || v === undefined || v === '' ? null : Number(v));
 
-    const rows = per.recordset || [];
-    const ov = overall.recordset?.[0] || null;
-
-    res.json({
-      semesters: rows.map(r => String(r.semesterCode)),
-      gpaPerSemester: rows.map(r => Number(r.gpa4)),         // GPA thang 4
-      conductPerSemester: rows.map(r => Number(r.drl)),      // ĐRL thang 100
-      creditsPerSemester: rows.map(r => Number(r.creditsInSemester)), // HP đăng ký từng kỳ
-      overall: {
-        gpa4: ov ? Number(ov.gpa4) : null,
-        totalCredits: ov ? Number(ov.totalCredits) : 0,      // tổng HP đăng ký
-        stage: ov ? String(ov.Namhoc ?? '') : '',
-        warningLevel: '--/--'
+    return res.json({
+      "Kỳ học": per.map(r => String(r.semesterCode ?? '')),
+      "GPA từng kỳ": per.map(r => toNum(r.gpa4)),
+      "Điểm rèn luyện từng kỳ": per.map(r => toNum(r.drl)),
+      "Số tín chỉ đăng ký từng kì": per.map(r => toNum(r.creditsInSemester)),
+      "Tổng quan": {
+        "GPA thang 4": ov ? toNum(ov.gpa4) : null,
+        "Số tín chỉ tích luỹ": ov ? toNum(ov.totalAccumCredits) : 0,
+        "Điểm rèn luyện trung bình": ov ? toNum(ov.avgConduct) : null,
+        "Năm học": ov ? String(ov.stage ?? '') : ''
       }
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: e.message || 'Internal Server Error' });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+
 
 app.use('/api', router);
 router.get('/health', (req, res) => res.json({ ok: true }));

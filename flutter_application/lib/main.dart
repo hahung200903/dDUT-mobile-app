@@ -3,15 +3,14 @@ import 'pages/home.dart';
 
 const String ApiBase = String.fromEnvironment(
   'API_BASE',
-  defaultValue: 'http://171.244.142.248/ddut/api',
-  // defaultValue: 'http://127.0.0.1:8080/api',
+  defaultValue: 'https://xemdiem.dut.udn.vn/api',
 );
 
 /// Mã sinh viên thay đổi khi đăng nhập
 const String DefaultStudentId = '102210088';
 
-// http://171.244.142.248/ddut/api/results?studentId=102210087
-// http://171.244.142.248/ddut/api/stats?studentId=102210087
+// https://xemdiem.dut.udn.vn/api/results?studentId=102210088
+// https://xemdiem.dut.udn.vn/api/stats?studentId=102210088
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
